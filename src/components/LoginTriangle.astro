@@ -76,20 +76,26 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
       window.netlifyIdentity.on('init', gestisciUtente);
       // login riuscito nel modale
       window.netlifyIdentity.on('login', gestisciUtente);
-      // registrazione appena fatta (di solito richiede conferma email prima
-      // di essere "loggato": il widget lo gestisce da sé)
+      // registrazione appena fatta (con autoconfirm attivo di solito è già loggato)
       window.netlifyIdentity.on('signup', function () {
         mostraMsg('Controlla la posta per confermare la registrazione.');
       });
 
       btn.addEventListener('click', function () {
+        // Il widget fa un proprio auto-init "silenzioso" (stesso dominio
+        // della pagina) al caricamento, che può sovrascrivere l'APIUrl
+        // passato sopra a seconda del timing. Lo si riafferma qui, appena
+        // prima di aprire il modale, così vince sempre il nostro.
+        window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
         window.netlifyIdentity.open('login'); // il modale ha anche il tab "Sign up"
       });
     }
 
-    // lo script del widget potrebbe non essere ancora pronto
-    if (window.netlifyIdentity) avvia();
-    else document.addEventListener('DOMContentLoaded', avvia);
+    // Attendere 'load' (non solo che lo script sia presente): l'auto-init
+    // interno del widget parte a DOMContentLoaded, vogliamo essere sicuri
+    // di configurare l'APIUrl DOPO, non prima.
+    if (document.readyState === 'complete') avvia();
+    else window.addEventListener('load', avvia);
   })();
 </script>
 
