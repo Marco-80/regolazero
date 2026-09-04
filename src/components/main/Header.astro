@@ -6,6 +6,7 @@ const isActive = (href: string) =>
 const links = [
   { href: '/', label: 'Home' },
   { href: '/giochi/', label: 'I nostri giochi' },
+  { href: '/articoli/', label: 'Articoli' },
   { href: '/materiali/', label: 'Materiali' },
   { href: '/archivio/', label: 'Archivio' },
 ];
@@ -13,7 +14,14 @@ const links = [
 
 <header class="rz-site-header" data-pagefind-ignore>
   <div class="rz-container rz-site-header__inner">
-    <a class="rz-site-header__brand" href="/">RegolaZero</a>
+    <a class="rz-site-header__brand" href="/">
+      <img
+        src="/images/site/logo-regolazero-header.png"
+        alt="RegolaZero"
+        width="600"
+        height="246"
+      />
+    </a>
     <nav class="rz-nav" aria-label="Navigazione principale">
       {
         links.map((l) => (

@@ -26,3 +26,7 @@ Thumbs.db
 # materiali sorgente grezzi del manuale (non versionare i binari)
 /sorgenti-manuale/
 *.zip
+
+# asset sorgente grezzi (loghi ad alta risoluzione ecc.): le versioni
+# ottimizzate per il web vanno in public/images/, non qui i file originali
+/img/
