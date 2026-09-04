@@ -12,11 +12,18 @@
 Sito del publisher indie di giochi di ruolo **RegolaZero** (Roberto Mazzucchi,
 Cristian Lenti, Alessandra Panuccio). Ospita:
 
-1. Le **produzioni originali** del team — a partire da **The Mist**, GdR dark
-   fantasy compatibile Mörk Borg, pubblicato sotto *Mörk Borg Third Party
-   License* (MB3PL).
-2. **Materiali supplementari** creati dal team per sistemi di altri autori
-   (es. contenuti "compatibili con Mörk Borg", "compatibili con CY_BORG", ecc.).
+1. La **presentazione** delle produzioni originali del team — a partire da
+   **The Mist**, GdR dark fantasy compatibile Mörk Borg, pubblicato sotto
+   *Mörk Borg Third Party License* (MB3PL).
+2. **Materiali supplementari futuri**, gratuiti, creati dal team per sistemi
+   di altri autori (es. contenuti "compatibili con Mörk Borg", "compatibili
+   con CY_BORG", ecc.).
+
+> **Regola fondamentale (decisa dall'utente): The Mist è un prodotto in
+> vendita, non va regalato sul sito.** Questo sito è la sua **vetrina**
+> (presentazione, atmosfera, perché giocarlo, dove comprarlo) e la casa dei
+> **materiali futuri gratuiti** — non un modo per leggere il manuale gratis.
+> Dettagli operativi in §13.
 
 - **Dominio:** `regolazero.it` — già registrato, DNS presumibilmente già puntati.
 - **Hosting:** GitHub Pages. Sito **100% statico**, nessun backend server, nessun
@@ -632,6 +639,12 @@ del Worker sì (è pubblico per natura), via `PUBLIC_MAILINGLIST_ENDPOINT`.
     dall'utente). `origin` collegato, branch `main`. `public/admin/config.yml`
     e `workers/mailing-list/wrangler.toml.example` puntano già a
     `Marco-80/regolazero`.
+12. **Dove si compra The Mist?** Il sito deve linkare uno store reale (store
+    proprio, itch.io, DriveThruRPG…) — per ora `link_esterni` in
+    `giochi/the-mist.md` è vuoto. Serve l'URL quando c'è.
+13. **Quali 1-2 contenuti "anteprima" pubblicare?** Vedi §13 — quali pezzi di
+    bestiario/avventure (se nessuno) l'utente vuole mostrare come assaggio,
+    ed eventuali PDF/quickstart gratuiti per `/the-mist/download/`.
 
 ---
 
@@ -720,18 +733,27 @@ catalogo, hub di gioco, indici e dettagli di articoli/contenuti/generatori,
 `/articoli/` cross-gioco. Filtro bozze in build. Verificare scrittura +
 pubblicazione di un articolo end-to-end dal pannello.
 
-**Fase 3 — Contenuti The Mist (IT + EN) + mailing list + download**
+**Fase 3 — Vetrina The Mist (IT + EN) + mailing list + download**
+
+*(Rivista: The Mist è in vendita, il sito è vetrina — vedi §1 e §13. Niente
+migrazione del manuale completo.)*
+
 - **Descrizione del gioco** (home `/the-mist/`): testi definitivi IT/EN — cos'è,
-  ambientazione (il Braenmore), come si gioca, pilastri.
+  ambientazione (il Braenmore), perché giocarlo, pilastri. *(Fatto un primo
+  giro con testo reale dal manuale, p. 4 — blurb/retrocopertina, materiale
+  promozionale legittimo da pubblicare.)*
+- **Link di acquisto**: valorizzare `link_esterni` nella entry `giochi/the-mist.md`
+  con dove comprare il manuale (store, itch.io, DriveThruRPG…) — §9.12.
 - **Mailing list**: rifinire `MailingListBody` (validazione, honeypot, stati
   successo/errore, privacy note) e **realizzare il backend scelto in §9.8**
   (Worker `workers/mailing-list/` + `data/mailing-list.ndjson`).
-- **Download**: pagina `/the-mist/download/` che elenca i file in
-  `public/downloads/the-mist/` (PDF, schede, docx), IT/EN.
-- Migrare bestiario e avventure già prodotti (es. "Il Canto Gelato") in coppie
-  `it/<slug>.md` / `en/<slug>.md`. Convertire dai docx/pdf mantenendo la
-  terminologia di §10. Per l'inglese usare i testi del manuale originale dove
-  esistono (vedi §9.7).
+- **Download**: SOLO materiale gratuito legittimo (quickstart ridotto,
+  scheda personaggio vuota, materiale promozionale) in
+  `public/downloads/the-mist/` — non il manuale.
+- **Bestiario/avventure**: al massimo **1-2 esempi "anteprima"** esplicitamente
+  marcati come tali (per dare un assaggio del tono/qualità), non una
+  migrazione sistematica del libro. Confermare con l'utente quali, se
+  nessuno è già stato scelto.
 
 **Fase 4 — Generatori casuali**
 Componenti interattivi: generatore di villaggio, generatore di rovine
@@ -759,6 +781,21 @@ modifiche alle route (già dinamiche su `[gioco]`).
 
 ## 13. Regole operative per Claude Code
 
+- **The Mist è un prodotto in vendita — MAI riversare il manuale sul sito
+  pubblico.** Vale per bestiario, avventure, regole, tabelle complete: sono
+  contenuto a pagamento. Sul sito vanno **solo**:
+  - materiale promozionale (blurb/retrocopertina, ambientazione a grandi
+    linee, "perché giocarlo", copertina, credits, ispirazioni — quello che
+    normalmente sta su una scheda prodotto o una quarta di copertina);
+  - **al massimo 1-2 esempi "anteprima"** espliciti (una creatura, un hook di
+    avventura), solo se l'utente conferma quali (§9.13);
+  - generatori con **tabelle originali**, scritte per il sito, non le tabelle
+    del manuale copiate parola per parola (le tabelle del manuale, es.
+    "Haunting Roads", "Weather", sono anch'esse contenuto a pagamento);
+  - link per comprare il manuale altrove (§9.12), non un modo per leggerlo.
+  Le 134 pagine del manuale in `Desktop/regolazero/themist/` restano una
+  fonte di **riferimento per tono/stile**, non materiale da trascrivere in
+  blocco. In caso di dubbio se qualcosa è "troppo", **chiedere prima**.
 - **Preferire componenti `.astro` nativi.** Isole interattive (`client:*`) solo
   per mappa e generatori.
 - **Non introdurre dipendenze** non elencate qui senza chiedere.
@@ -782,3 +819,33 @@ modifiche alle route (già dinamiche su `[gioco]`).
   chiedere** invece di scegliere valori arbitrari.
 - Aggiornare questo file quando una decisione aperta viene chiusa o quando la
   struttura del repo cambia in modo sostanziale.
+
+---
+
+## 14. Gate "Coming soon"
+
+Il sito, in produzione, mostra a chiunque una pagina **"in arrivo"** finché
+non è pronto — deciso dall'utente. Implementazione (sito 100% statico, niente
+server, quindi **gate lato client**, non una vera protezione):
+
+- Interruttore: `src/config/site.ts` → `COMING_SOON` (`true`/`false`).
+  **Per pubblicare il sito vero, mettere `false` e ridistribuire.**
+- Componente `src/components/ComingSoonGate.astro`, incluso come **primissima
+  cosa** nell'`<head>` sia di `MainLayout` che di `TheMistLayout`: se
+  `COMING_SOON` è vero e la pagina non è `/coming-soon/`, reindirizza lì
+  (`location.replace`), a meno che `localStorage['rz-bypass-coming-soon']`
+  non sia già impostato.
+- **Bypass per chi sviluppa/testa**: visitare una volta
+  `https://regolazero.it/?anteprima=nebbia-2026` (parametro e codice in
+  `site.ts`, `BYPASS_PARAM`/`BYPASS_CODE`) imposta il flag in `localStorage` e
+  da lì in poi quel browser vede il sito normalmente, su tutte le pagine.
+  Cambiare `BYPASS_CODE` in `site.ts` in qualsiasi momento (non è un vero
+  segreto: è nel codice sorgente pubblico del repo).
+- Pagina `src/pages/coming-soon.astro`: standalone, `noindex`, non passa dal
+  gate (altrimenti loop).
+- **Limite noto, da tenere presente**: essendo tutto statico, l'HTML reale
+  delle pagine "gated" esiste comunque nel sito pubblicato — chi disattiva
+  JS, guarda il codice sorgente, o fa una richiesta diretta (`curl`, un bot)
+  vede comunque il contenuto. Il gate blocca solo la **navigazione normale in
+  browser**. Se in futuro serve un blocco vero, servirebbe un layer con logica
+  a runtime (es. Cloudflare Access davanti al dominio) — fuori scope ora.

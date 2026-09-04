@@ -1,0 +1,27 @@
+---
+import '../styles/main.css';
+const canonical = new URL('/coming-soon/', Astro.site).href;
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>RegolaZero — In arrivo</title>
+    <link rel="canonical" href={canonical} />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <main class="rz-container" style="padding-block: 4rem; text-align: center;">
+      <h1 style="margin-bottom: 0.5rem;">RegolaZero</h1>
+      <p style="color: var(--rz-muted); font-size: 1.15rem;">
+        Il sito è in costruzione. Torna presto.
+      </p>
+      <p style="margin-top: 2.5rem;">
+        <a href="mailto:info@regolazero.it">info@regolazero.it</a>
+      </p>
+    </main>
+  </body>
+</html>

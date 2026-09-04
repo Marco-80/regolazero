@@ -1,0 +1,33 @@
+---
+// Gate "coming soon" lato client. Va incluso all'INIZIO dell'<head> di
+// MainLayout e TheMistLayout, prima di qualsiasi altro script/CSS, così
+// scatta prima possibile e riduce il flash di contenuto reale.
+// Non protegge da chi disattiva JS o guarda il codice sorgente — solo dalla
+// navigazione normale (CLAUDE.md §14).
+import { COMING_SOON, BYPASS_PARAM, BYPASS_CODE, BYPASS_KEY } from '../config/site';
+
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isGatePage = path === '/coming-soon';
+const attivo = COMING_SOON && !isGatePage;
+---
+
+{
+  attivo && (
+    <script is:inline define:vars={{ BYPASS_PARAM, BYPASS_CODE, BYPASS_KEY }}>
+      (function () {
+        try {
+          var params = new URLSearchParams(location.search);
+          if (params.get(BYPASS_PARAM) === BYPASS_CODE) {
+            localStorage.setItem(BYPASS_KEY, '1');
+          }
+          if (localStorage.getItem(BYPASS_KEY) === '1') return;
+        } catch (e) {
+          // localStorage non disponibile (privacy mode ecc.): non blocchiamo,
+          // meglio mostrare il sito che rompere la navigazione.
+          return;
+        }
+        location.replace('/coming-soon/');
+      })();
+    </script>
+  )
+}

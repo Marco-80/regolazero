@@ -2,6 +2,7 @@
 import '../styles/the-mist.css';
 import MistReturnLink from '../components/the-mist/MistReturnLink.astro';
 import LanguageSwitcher from '../components/the-mist/LanguageSwitcher.astro';
+import ComingSoonGate from '../components/ComingSoonGate.astro';
 import { LINGUA_DEFAULT } from '../i18n/the-mist';
 import type { Lingua } from '../i18n/the-mist';
 
@@ -29,6 +30,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
 <!doctype html>
 <html lang={lang}>
   <head>
+    <ComingSoonGate />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titolo} — The Mist</title>

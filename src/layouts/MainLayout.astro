@@ -2,6 +2,7 @@
 import '../styles/main.css';
 import Header from '../components/main/Header.astro';
 import Footer from '../components/main/Footer.astro';
+import ComingSoonGate from '../components/ComingSoonGate.astro';
 
 interface Props {
   titolo: string;
@@ -15,6 +16,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
 <!doctype html>
 <html lang="it">
   <head>
+    <ComingSoonGate />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titolo} — RegolaZero</title>
