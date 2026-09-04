@@ -44,7 +44,7 @@ Cristian Lenti, Alessandra Panuccio). Ospita:
 | Ambito | Scelta | Note |
 |---|---|---|
 | Static site generator | **Astro** (ultima major) | componenti `.astro` nativi; framework JS pesanti solo dove serve davvero |
-| Editing contenuti | **Decap CMS** (ex Netlify CMS) | pannello web sotto `/admin/`, login via Netlify Identity + Git Gateway (§16, stesso account del sito), ogni salvataggio = commit Git |
+| Editing contenuti | **Decap CMS** (ex Netlify CMS) | pannello web sotto `/admin/`; login online non ancora risolto (§16, niente Netlify), oggi solo in locale; ogni salvataggio = commit Git |
 | Ricerca full-text | **Pagefind** via `astro-pagefind` | indice generato in build, gira lato client, zero servizi a pagamento |
 | Sitemap XML | `@astrojs/sitemap` | |
 | Markdown esteso | `@astrojs/mdx` | per le pagine che devono includere componenti interattivi |
@@ -965,3 +965,41 @@ Cloudflare Worker — stesso pattern già usato per lo stub della mailing list
 di nuovo all'utente conferma esplicita (non dedurla da una frase ambigua):
 vuole procedere con quello, o preferisce restare sull'editing locale più a
 lungo?
+
+---
+
+## 17. Strumenti standalone (mappa, generatori) — FUORI da questo progetto
+
+Deciso dall'utente dopo la giornata di attrito con Netlify/Decap/Astro: per
+la **mappa interattiva** e i **generatori casuali** di The Mist, niente
+Node, niente Astro, niente build, niente servizio esterno. Solo **file
+HTML/CSS/JS puri**, apribili col doppio click, senza server.
+
+**Non vivono in questo repo.** Stanno in:
+```
+C:\Users\mscar\Desktop\regolazero\strumenti\
+├── index.html                    hub con link a tutti gli strumenti
+├── style.css                     tema scuro condiviso
+├── mappa/
+│   ├── index.html                mappa interattiva (pin cliccabili)
+│   └── img/braenmore.jpg         scansione reale del Braenmore
+└── generatore-villaggio/
+    └── index.html                nome/disgrazia/segreto di un villaggio
+```
+(erano stati messi per errore in `public/strumenti/` di questo progetto
+Astro — rimossi da lì e spostati qui: anche se i singoli file sono HTML
+puro, tenerli dentro il repo Astro li legava comunque alla sua build/deploy
+via Node, che è esattamente quello che l'utente non vuole per questi.)
+
+Se in futuro si lavora ancora su questi strumenti, **partire da quella
+cartella sul Desktop**, non da questo repo. Regole:
+- Una cartella per strumento, `index.html` autosufficiente (script inline).
+- Nessuna dipendenza da npm/Node per funzionare o per essere modificati:
+  si aprono e si editano come file di testo qualunque.
+- Stesse regole di §13 su non trascrivere il manuale: tabelle originali,
+  scritte per il sito.
+- Dove ospitarli/come richiamarli da un altro sito (link diretto, iframe,
+  hosting a parte) — decisione dell'utente, non ancora presa.
+
+Il resto di questo progetto (Astro, sito RegolaZero, Decap) resta separato
+e in sospeso — vedi §16.
