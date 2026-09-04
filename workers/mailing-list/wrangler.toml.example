@@ -6,7 +6,7 @@ main = "index.js"
 compatibility_date = "2025-01-01"
 
 [vars]
-REPO = "ORG/REPO"            # es. regolazero/sito
+REPO = "Marco-80/regolazero"
 BRANCH = "main"
 FILE_PATH = "data/mailing-list.ndjson"
 ALLOW_ORIGIN = "https://regolazero.it"

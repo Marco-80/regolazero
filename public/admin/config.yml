@@ -6,7 +6,7 @@
 #
 backend:
   name: github
-  repo: ORG/REPO # TODO: owner/nome-repo GitHub
+  repo: Marco-80/regolazero
   branch: main
   # base_url: https://oauth.regolazero.it   # TODO: URL del proxy OAuth
   # auth_endpoint: auth

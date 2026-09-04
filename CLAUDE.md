@@ -572,10 +572,27 @@ del Worker sì (è pubblico per natura), via `PUBLIC_MAILINGLIST_ENDPOINT`.
 2. **Font del microsito.** Candidati display: *Another Shabby*, *Kust*,
    *AC Pathetich*, *Rushk*, *Avalon Caps*. Serve la scelta finale + licenza
    d'uso web + file `woff2` (self-hosting, niente Google Fonts CDN per privacy).
-3. **OAuth per Decap CMS.** GitHub Pages non ha backend: il login GitHub di
-   Decap richiede un proxy OAuth. Opzioni: un piccolo worker Cloudflare
-   (gratuito) o servizio equivalente. Decidere e configurare `base_url` in
-   `config.yml`. Fino ad allora, editing solo in locale (`npm run cms`).
+3. **Login di Decap CMS — GitHub o Google? (chiesto dall'utente)**
+   Il backend `github` di Decap autentica **sempre via account GitHub**: ogni
+   redattore deve averne uno, e il commit del contenuto viene attribuito a
+   quell'account. "Accedi con Google" non esiste come opzione diretta su
+   questo backend.
+   Per avere davvero un **"Accedi con Google"** l'unica via è cambiare
+   backend: **Netlify Identity + Git Gateway**. Si crea un progetto Netlify
+   **gratuito** collegato allo stesso repo GitHub (il sito continua a essere
+   **buildato e servito da GitHub Pages**, Netlify serve solo per
+   autenticazione — non è un secondo hosting in conflitto); si abilita
+   Identity con provider esterno Google; Decap si configura con
+   `backend: { name: git-gateway }` invece di `github`. I redattori si
+   loggano con l'account Google che inviti da Netlify Identity; Git Gateway
+   fa i commit per loro (non serve più che abbiano un account GitHub).
+   **Alternativa già pronta nello scaffold**: proxy OAuth su Cloudflare
+   Worker (§7.5 ne ha già uno per la mailing list — stesso account) — ma lì
+   il login resta "Accedi con GitHub".
+   → **Da decidere**: Netlify Identity/Git Gateway (login Google, consigliato
+   se chi scrive non ha/vuole un account GitHub) oppure GitHub OAuth via
+   Worker (login GitHub, meno servizi esterni). Fino alla scelta, editing solo
+   in locale (`npm run dev` + `npm run cms`).
 4. **Struttura `/materiali/`.** Route dinamica `[sistema].astro` da subito o
    pagina indice singola finché c'è un solo sistema? Default proposto: indice
    singolo ora, dinamica quando arriva il secondo sistema.
@@ -590,11 +607,11 @@ del Worker sì (è pubblico per natura), via `PUBLIC_MAILINGLIST_ENDPOINT`.
    (avventure, testi di lore, stringhe UI) serve sapere se traduce il team o
    vanno lasciati come `TODO:` nel file `en/<slug>.md`. Convenzione attuale:
    se manca il file in `en/`, la voce non compare nell'edizione EN.
-8. **Backend mailing list (§7.5).** Confermare l'approccio "Cloudflare Worker
-   che committa su `data/mailing-list.ndjson`" oppure scegliere un'alternativa
-   (Buttondown / Listmonk / Formspree). Serve inoltre: chi possiede il token
-   GitHub del Worker, se attivare Turnstile, se e quando fare il doppio
-   opt-in, e la privacy policy / base giuridica GDPR per la raccolta email.
+8. **Backend mailing list (§7.5) — POSTICIPATO (deciso dall'utente).** Per ora
+   `/the-mist/mailing-list/` resta col solo fallback `mailto:` (nessun
+   `PUBLIC_MAILINGLIST_ENDPOINT` configurato). Lo stub Worker
+   (`workers/mailing-list/`) resta come riferimento per quando si riprende il
+   punto: approccio, token GitHub, Turnstile, doppio opt-in, privacy policy.
 9. **The Mist: articoli/contenuti nel sito madre o nel microsito? (§6.1.1).**
    Proposta: articoli e contenuti in `/giochi/the-mist/…` (sistema editoriale
    publisher); mappa/bestiario/avventure/generatori restano nel microsito.
@@ -604,10 +621,17 @@ del Worker sì (è pubblico per natura), via `PUBLIC_MAILINGLIST_ENDPOINT`.
     le quinte, errata) — aggiungerne/toglierne. Tenere `editorial_workflow`
     (più "WP") o passare al solo flag `bozza`? Chi sono gli autori (valori del
     campo `autore`)?
-11. **Repo pubblico o privato?** Se pubblico, `data/mailing-list.ndjson` con
-    email reali non va bene (§9.8) e le bozze articoli sono visibili nella
-    cronologia. Se privato, GitHub Pages richiede piano a pagamento per il
-    dominio custom con HTTPS su repo privati — verificare.
+11. **Repo pubblico o privato? — RISOLTO: pubblico (deciso dall'utente).**
+    Implicazioni da tenere a mente: quando si riprende §9.8, `data/
+    mailing-list.ndjson` **non deve mai contenere email reali** finché il
+    repo è pubblico (spostare lo storage altrove — KV/D1 — o rendere privato
+    il repo prima di attivare il backend). Con `editorial_workflow` le bozze
+    articoli passano per una PR pubblica: chi non vuole bozze visibili prima
+    della pubblicazione deve saperlo.
+    Repo GitHub: **https://github.com/Marco-80/regolazero** (pubblico, creato
+    dall'utente). `origin` collegato, branch `main`. `public/admin/config.yml`
+    e `workers/mailing-list/wrangler.toml.example` puntano già a
+    `Marco-80/regolazero`.
 
 ---
 

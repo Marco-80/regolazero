@@ -50,10 +50,11 @@ export const t = {
       'Il Braenmore è muto. La Nebbia ha preso le strade, i volti, i nomi. Chi ancora cammina lo fa a memoria, con un Lumen che non basta mai.',
     // descrizione del gioco (home) — TESTI PROVVISORI, definitivi in Fase 3
     descrTitolo: 'Il gioco',
+    // Traduzione IT del testo di presentazione originale (manuale, p. 4).
     descr1:
-      'The Mist è un gioco di ruolo dark fantasy compatibile con Mörk Borg. Bastano pochi tratti — PF, CD, Presenza, Sussurro — e la tavola è pronta: il resto è atmosfera, scelte difficili e poca luce.',
+      'Borg in The Mist avvolge un mondo cupo e marcio, dove l’epica si mescola a toni gotici. Uomini disperati, cavalieri in cerca di redenzione, predicatori folli e senza paura, musicisti all’inseguimento di speranze perdute vagano per le sue terre. Creature silenziose e infide, fantasmi e demoni risvegliati da antiche maledizioni si nascondono nell’ombra.',
     descr2:
-      'Si gioca nel Braenmore, una regione inghiottita dalla Nebbia: villaggi che si dimenticano il proprio nome, rovine che ricordano al posto tuo, presenze che si nutrono di ciò che provi mentre le attraversi.',
+      'Castelli abbandonati, rovine dimenticate, terre desolate e misteri irrisolti attendono chi avrà il coraggio di affrontare la Nebbia.',
     pilastriTitolo: 'In breve',
     pilastri: [
       'Compatibile Mörk Borg: se conosci quello, sai già giocare.',
@@ -110,10 +111,11 @@ export const t = {
     intro:
       'The Braenmore is silent. The Mist has taken the roads, the faces, the names. Those still walking do it from memory, with a Lumen that is never enough.',
     descrTitolo: 'The game',
+    // Original blurb from the manual (p. 4), verbatim.
     descr1:
-      'The Mist is a dark fantasy tabletop RPG compatible with Mörk Borg. A handful of stats — HP, DR, Presence, Whisper — and the table is ready: the rest is atmosphere, hard choices and too little light.',
+      'Borg in The Mist shrouds a dark, rotten world, where epics mingle with gothic tones. Desperate men, cavaliers seeking redemption, fearless mad preachers, musicians chasing lost hopes wander its lands. Silent, treacherous creatures, ghosts and demons awakened by ancient curses lurk in the shadows.',
     descr2:
-      'It is played in the Braenmore, a region swallowed by the Mist: villages that forget their own name, ruins that remember in your place, presences that feed on what you feel while crossing them.',
+      'Abandoned castles, forgotten ruins, desolate lands and unsolved mysteries await those daring enough to face The Mist.',
     pilastriTitolo: 'At a glance',
     pilastri: [
       'Mörk Borg compatible: if you know that, you already know how to play.',
