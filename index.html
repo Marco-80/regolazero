@@ -47,6 +47,7 @@
 </head>
 <body>
   <div id="nebbia"></div>
+  <div id="audio-sottofondo" style="position: fixed; width: 1px; height: 1px; overflow: hidden; opacity: 0;"></div>
 
   <div class="contenuto">
     <div>
@@ -91,6 +92,61 @@
         }
       };
     });
+  </script>
+
+  <script>
+    // Audio di sottofondo: player YouTube nascosto (youtube-nocookie.com),
+    // in loop, a volume molto basso. Parte muto (i browser bloccano
+    // l'autoplay con audio) e si sblocca al primo tocco/click/tasto.
+    (function () {
+      var VIDEO_ID = '1YhKgK_2PU4';
+      var VOLUME = 8; // 0-100, molto basso
+      var player = null;
+      var sbloccato = false;
+
+      var tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+
+      window.onYouTubeIframeAPIReady = function () {
+        player = new YT.Player('audio-sottofondo', {
+          host: 'https://www.youtube-nocookie.com',
+          videoId: VIDEO_ID,
+          playerVars: {
+            autoplay: 1,
+            mute: 1,
+            loop: 1,
+            playlist: VIDEO_ID,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            playsinline: 1
+          },
+          events: {
+            onReady: function (e) {
+              e.target.setVolume(VOLUME);
+              e.target.playVideo();
+            }
+          }
+        });
+      };
+
+      function sbloccaAudio() {
+        if (sbloccato || !player || typeof player.unMute !== 'function') return;
+        sbloccato = true;
+        player.unMute();
+        player.setVolume(VOLUME);
+        player.playVideo();
+        ['click', 'touchstart', 'keydown'].forEach(function (ev) {
+          document.removeEventListener(ev, sbloccaAudio);
+        });
+      }
+
+      ['click', 'touchstart', 'keydown'].forEach(function (ev) {
+        document.addEventListener(ev, sbloccaAudio);
+      });
+    })();
   </script>
 </body>
 </html>
