@@ -1,15 +1,20 @@
-# Decap CMS — redazione RegolaZero (il "backend tipo WP"). Vedi CLAUDE.md §6.1.
+# Decap CMS — redazione RegolaZero (il "backend tipo WP"). Vedi CLAUDE.md §6.1
+# e §15/§16 per il login. Autenticazione via Netlify Identity + Git Gateway:
+# lo stesso account/ruolo che sblocca il sito in coming-soon (§15) dà accesso
+# anche a questo pannello — nessun servizio separato.
 #
-# GitHub Pages non ha backend: il login GitHub richiede un proxy OAuth
-# (worker Cloudflare, §9.3). Finché non è pronto si edita in locale:
+# Va abilitato "Git Gateway" sul progetto regolazero.netlify.app (Identity →
+# Services → Git Gateway) e ristretto ai soli utenti col ruolo `editor`
+# (campo "Roles" della stessa schermata). Finché non è attivo, editing solo
+# in locale:
 #   npm run dev  +  npm run cms  ->  http://localhost:4321/admin/
 #
 backend:
-  name: github
+  name: git-gateway
   repo: Marco-80/regolazero
   branch: main
-  # base_url: https://oauth.regolazero.it   # TODO: URL del proxy OAuth
-  # auth_endpoint: auth
+  identity_url: https://regolazero.netlify.app/.netlify/identity
+  gateway_url: https://regolazero.netlify.app/.netlify/git
 
 local_backend: true
 

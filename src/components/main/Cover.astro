@@ -1,0 +1,18 @@
+---
+import { copertinaEsiste } from '../../lib/img';
+
+interface Props {
+  src?: string | null;
+  alt: string;
+  /** testo mostrato quando manca una copertina reale (es. il titolo) */
+  fallback?: string;
+  badge?: string;
+}
+const { src, alt, fallback, badge } = Astro.props;
+const ok = copertinaEsiste(src);
+---
+
+<div class="rz-cover">
+  {ok ? <img src={src as string} alt={alt} loading="lazy" /> : <span>{fallback}</span>}
+  {badge && <span class="rz-cover__badge">{badge}</span>}
+</div>

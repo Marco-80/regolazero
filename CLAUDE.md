@@ -44,7 +44,7 @@ Cristian Lenti, Alessandra Panuccio). Ospita:
 | Ambito | Scelta | Note |
 |---|---|---|
 | Static site generator | **Astro** (ultima major) | componenti `.astro` nativi; framework JS pesanti solo dove serve davvero |
-| Editing contenuti | **Decap CMS** (ex Netlify CMS) | pannello web sotto `/admin/`, login GitHub, ogni salvataggio = commit Git |
+| Editing contenuti | **Decap CMS** (ex Netlify CMS) | pannello web sotto `/admin/`, login via Netlify Identity + Git Gateway (§16, stesso account del sito), ogni salvataggio = commit Git |
 | Ricerca full-text | **Pagefind** via `astro-pagefind` | indice generato in build, gira lato client, zero servizi a pagamento |
 | Sitemap XML | `@astrojs/sitemap` | |
 | Markdown esteso | `@astrojs/mdx` | per le pagine che devono includere componenti interattivi |
@@ -579,27 +579,17 @@ del Worker sì (è pubblico per natura), via `PUBLIC_MAILINGLIST_ENDPOINT`.
 2. **Font del microsito.** Candidati display: *Another Shabby*, *Kust*,
    *AC Pathetich*, *Rushk*, *Avalon Caps*. Serve la scelta finale + licenza
    d'uso web + file `woff2` (self-hosting, niente Google Fonts CDN per privacy).
-3. **Login di Decap CMS — GitHub o Google? (chiesto dall'utente)**
-   Il backend `github` di Decap autentica **sempre via account GitHub**: ogni
-   redattore deve averne uno, e il commit del contenuto viene attribuito a
-   quell'account. "Accedi con Google" non esiste come opzione diretta su
-   questo backend.
-   Per avere davvero un **"Accedi con Google"** l'unica via è cambiare
-   backend: **Netlify Identity + Git Gateway**. Si crea un progetto Netlify
-   **gratuito** collegato allo stesso repo GitHub (il sito continua a essere
-   **buildato e servito da GitHub Pages**, Netlify serve solo per
-   autenticazione — non è un secondo hosting in conflitto); si abilita
-   Identity con provider esterno Google; Decap si configura con
-   `backend: { name: git-gateway }` invece di `github`. I redattori si
-   loggano con l'account Google che inviti da Netlify Identity; Git Gateway
-   fa i commit per loro (non serve più che abbiano un account GitHub).
-   **Alternativa già pronta nello scaffold**: proxy OAuth su Cloudflare
-   Worker (§7.5 ne ha già uno per la mailing list — stesso account) — ma lì
-   il login resta "Accedi con GitHub".
-   → **Da decidere**: Netlify Identity/Git Gateway (login Google, consigliato
-   se chi scrive non ha/vuole un account GitHub) oppure GitHub OAuth via
-   Worker (login GitHub, meno servizi esterni). Fino alla scelta, editing solo
-   in locale (`npm run dev` + `npm run cms`).
+3. **Login di Decap CMS — RISOLTO: Netlify Identity + Git Gateway (stesso
+   account del sito, deciso dall'utente).** Niente servizio separato: chi ha
+   il ruolo `editor` su Netlify Identity (§15) può sia vedere il sito in
+   coming-soon sia scrivere dal pannello `/admin/`. `public/admin/config.yml`
+   già configurato con `backend: git-gateway`. **Resta da fare nel pannello
+   Netlify**: Identity → Services → **Git Gateway** → Enable, e nel campo
+   "Roles" di quella stessa sezione scrivere `editor` (così solo chi ha
+   quel ruolo può salvare contenuti — chi ha solo `preview` continua a vedere
+   il sito ma non può scrivere). Dettagli setup in §16.
+   (Scartata l'opzione Cloudflare Worker con login GitHub separato — l'utente
+   preferisce riusare l'unico sistema di account già in piedi.)
 4. **Struttura `/materiali/`.** Route dinamica `[sistema].astro` da subito o
    pagina indice singola finché c'è un solo sistema? Default proposto: indice
    singolo ora, dinamica quando arriva il secondo sistema.
@@ -947,3 +937,43 @@ Netlify Identity, non configurati esplicitamente).
 - `on('signup')`: messaggio "controlla la posta per confermare".
 - Il pulsante sta per ora solo su `/coming-soon/` (è l'unica pagina che i
   visitatori non autenticati vedono comunque).
+
+---
+
+## 16. Backend CMS — Decap via Git Gateway (stesso login del sito)
+
+Deciso dall'utente: **niente sistema separato per il backend**. Chi ha già
+un account Netlify Identity (§15) con ruolo `editor` usa le stesse
+credenziali per accedere a `/admin/` e scrivere contenuti — non un login
+GitHub a parte, non un Worker Cloudflare dedicato.
+
+### Setup (da fare nel pannello Netlify — regolazero.netlify.app)
+
+1. **Identity → Services → Git Gateway → Enable Git Gateway.**
+   Se chiede di collegare un provider Git, scegli GitHub e autorizza
+   sull'account/organizzazione che possiede `Marco-80/regolazero` (serve un
+   token/OAuth GitHub una tantum per autorizzare Netlify a scrivere sul repo
+   per conto degli utenti Identity — è un passaggio del pannello Netlify,
+   non un servizio nuovo da gestire).
+2. Nella stessa schermata di Git Gateway, campo **"Roles"**: scrivi
+   `editor`. Così solo chi ha quel ruolo (assegnato in Identity → Users →
+   utente → Roles, v. §15) può salvare modifiche dal pannello; chi ha solo
+   `preview` continua a vedere il sito ma il backend gli resterà
+   inaccessibile (o in sola lettura, a seconda di come Decap gestisce
+   l'assenza del ruolo — da verificare al primo test).
+3. Nessuna modifica di codice oltre a quella già fatta: `public/admin/
+   config.yml` ha già `backend: git-gateway` con `identity_url` e
+   `gateway_url` puntati a `regolazero.netlify.app`.
+
+### Verifica
+
+Vai su `https://regolazero.it/admin/`: dovrebbe apparire la schermata di
+login di Decap con il widget Netlify Identity incorporato. Login con un
+utente che ha ruolo `editor` → si entra nel pannello, le collection di §6.1
+sono editabili, ogni salvataggio è un commit (o una PR, con
+`publish_mode: editorial_workflow` attivo) su `Marco-80/regolazero`.
+
+Se qualcosa non torna (schermata bianca, errore di connessione a Identity,
+ecc.), è quasi certamente un altro problema di configurazione lato Netlify
+dello stesso tipo di quelli già risolti in §15 (progetto privato, timing
+del widget…) — controllare prima lì.

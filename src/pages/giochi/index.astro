@@ -9,8 +9,10 @@ const giochi = (await getCollection('giochi')).sort(
 ---
 
 <MainLayout titolo="Giochi" descrizione="Il catalogo dei giochi RegolaZero.">
-  <h1>Giochi</h1>
-  <p>Le produzioni originali del team RegolaZero.</p>
+  <div class="rz-page-hero">
+    <h1>I nostri giochi</h1>
+    <p>Le produzioni originali del team RegolaZero.</p>
+  </div>
 
   {
     giochi.length === 0 ? (
