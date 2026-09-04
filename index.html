@@ -34,6 +34,7 @@
       width: min(90vw, 32rem);
       height: auto;
       animation: respiro 10s ease-in-out infinite;
+      cursor: pointer;
     }
     @keyframes respiro {
       0%, 100% { filter: brightness(1); }
@@ -42,7 +43,46 @@
     @media (prefers-reduced-motion: reduce) {
       .logo { animation: none; }
     }
-    p { margin-top: 2rem; font-size: 1.1rem; color: #9c9c9c; }
+    /* Blocco logo + pannelli: si sposta insieme, come un'unica colonna,
+       così i pannelli restano sempre appena sotto il logo. */
+    .salita {
+      transition: transform 5.6s cubic-bezier(0.83, 0, 0.17, 1);
+    }
+    .pannelli {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: clamp(1rem, 3vw, 2rem);
+      margin-top: clamp(1.5rem, 4vw, 3rem);
+      opacity: 0;
+      transition: opacity 4s ease;
+    }
+    .pannello {
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+      box-sizing: border-box;
+    }
+    .pannello--laterale {
+      width: clamp(140px, 26vw, 380px);
+      aspect-ratio: 380 / 249;
+    }
+    .pannello--centrale {
+      width: clamp(150px, 26vw, 380px);
+      aspect-ratio: 380 / 500;
+      margin-top: clamp(1.5rem, 6vw, 5rem);
+    }
+    /* Schermi stretti: 3 affiancati non ci stanno, si impilano in
+       ordine (sinistra, centro, destra) invece di andare a capo storti. */
+    @media (max-width: 640px) {
+      .pannelli { flex-direction: column; align-items: center; }
+      .pannello--laterale,
+      .pannello--centrale {
+        width: min(80vw, 380px);
+        margin-top: 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -50,11 +90,38 @@
   <div id="audio-sottofondo" style="position: fixed; width: 1px; height: 1px; overflow: hidden; opacity: 0;"></div>
 
   <div class="contenuto">
-    <div>
-      <img class="logo" src="/images/site/logo-regolazero.png" alt="RegolaZero" width="1600" height="656" />
-      <p>Il sito è in costruzione. Torna presto.</p>
+    <div class="salita" id="salita">
+      <img class="logo" id="logo" src="/images/site/logo-regolazero.png" alt="RegolaZero" width="1600" height="656" />
+      <div class="pannelli" id="pannelli">
+        <div class="pannello pannello--laterale" id="pannello-sinistra"></div>
+        <div class="pannello pannello--centrale" id="pannello-centro"></div>
+        <div class="pannello pannello--laterale" id="pannello-destra"></div>
+      </div>
     </div>
   </div>
+
+  <script>
+    // Al click sul logo: risalita fluida (5,6s, accelera e decelera
+    // lentamente) fino a fermarsi a 50px dal bordo superiore, e insieme
+    // (in dissolvenza) compaiono i 3 pannelli sotto. Una volta sola: click
+    // successivi non fanno nulla.
+    (function () {
+      var logo = document.getElementById('logo');
+      var salita = document.getElementById('salita');
+      var pannelli = document.getElementById('pannelli');
+      var spostato = false;
+
+      logo.addEventListener('click', function () {
+        if (spostato) return;
+        spostato = true;
+        var rect = logo.getBoundingClientRect();
+        var margine = 50;
+        var delta = margine - rect.top; // negativo: risale
+        salita.style.transform = 'translateY(' + delta + 'px)';
+        pannelli.style.opacity = '1';
+      });
+    })();
+  </script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script>

@@ -96,8 +96,10 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
 
 - Sfondo scuro fisso `#121212` (non segue tema chiaro/scuro di sistema: il
   logo è bianco su trasparente, deve restare leggibile sempre).
-- Logo centrato (`images/site/logo-regolazero.png`), sotto il testo
-  "Il sito è in costruzione. Torna presto."
+- Logo centrato (`images/site/logo-regolazero.png`). **Non c'è più testo
+  sotto** ("Il sito è in costruzione. Torna presto." è stato tolto su
+  richiesta esplicita del 04/09 notte, sostituito dall'interazione al
+  click descritta sotto).
 - **Nebbia di sfondo animata**: due gruppi di macchie bianche appena
   percettibili, sfocate via CSS (`filter: blur(70px)`), che derivano
   lentissime con **p5.js** (rumore di Perlin, `t += 0.0015 * vel` per
@@ -115,6 +117,24 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   ("elimina tutto ciò che ha a che fare con Astro, Netlify"). Se in futuro
   serve di nuovo un login/blocco d'accesso, va ridiscusso da capo — non
   riportare dentro lo script di Netlify Identity di default.
+- **Interazione al click sul logo** (aggiunta 04/09 notte): il logo
+  (`#logo`) e i pannelli sotto (`#pannelli`) sono dentro un unico wrapper
+  `.salita` che si sposta come blocco. Al click: `.salita` risale con
+  `transform: translateY(...)` (transizione CSS 5,6s,
+  `cubic-bezier(0.83, 0, 0.17, 1)` — accelera e decelera molto
+  lentamente) finché il logo non è a 50px dal bordo superiore, e resta lì
+  fisso; contemporaneamente `#pannelli` passa da `opacity: 0` a `1` in
+  4s. Un solo click ha effetto (flag `spostato` in JS): i successivi non
+  fanno nulla. `#pannelli` contiene **3 div placeholder** (`.pannello`,
+  bordo sottile + leggero gradiente, `border-radius: 18px`) — due
+  laterali "orizzontali" (`.pannello--laterale`, aspect-ratio 380/249) e
+  uno centrale "verticale" più alto e leggermente più in basso
+  (`.pannello--centrale`, aspect-ratio 380/500, `margin-top` maggiore).
+  Sotto i 640px si impilano in colonna (sinistra, centro, destra) invece
+  di andare a capo storti. **Sono contenitori generici, vuoti apposta**:
+  in futuro ospiteranno moduli/link/immagini (non necessariamente
+  statici) — quando si decide il contenuto, lavorare dentro
+  `#pannello-sinistra` / `#pannello-centro` / `#pannello-destra`.
 - **Audio di sottofondo** (aggiunto 04/09 sera): player YouTube nascosto
   (video `1YhKgK_2PU4`, dominio `youtube-nocookie.com` per ridurre il
   tracciamento), via **YouTube IFrame Player API** ufficiale
