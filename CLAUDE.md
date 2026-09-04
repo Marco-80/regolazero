@@ -645,6 +645,13 @@ del Worker sì (è pubblico per natura), via `PUBLIC_MAILINGLIST_ENDPOINT`.
 13. **Quali 1-2 contenuti "anteprima" pubblicare?** Vedi §13 — quali pezzi di
     bestiario/avventure (se nessuno) l'utente vuole mostrare come assaggio,
     ed eventuali PDF/quickstart gratuiti per `/the-mist/download/`.
+14. **Email di contatto — RIMOSSA, nessuna confermata.** Avevo messo
+    `info@regolazero.it` come segnaposto senza verificarla: **rimossa
+    ovunque** (pagina `/coming-soon/`, fallback mailing list) su richiesta
+    dell'utente, l'indirizzo non era reale/verificato. Finché non c'è un
+    indirizzo vero, **non inventarne uno**: mostrare solo testo, niente
+    `mailto:`. Quando l'utente fornisce un indirizzo reale, aggiungerlo qui e
+    nei punti del sito dove serve.
 
 ---
 
@@ -817,6 +824,10 @@ modifiche alle route (già dinamiche su `[gioco]`).
   (testo e logo, §9.5).
 - Quando una scelta di §9 è ancora aperta e blocca il lavoro, **fermarsi e
   chiedere** invece di scegliere valori arbitrari.
+- **Mai inventare dati di contatto** (email, telefono, social) come
+  segnaposto plausibile — è già successo una volta con un'email fasulla
+  (§9.14) e va evitato. Se manca un dato reale, o si omette il campo o si
+  chiede prima.
 - Aggiornare questo file quando una decisione aperta viene chiusa o quando la
   struttura del repo cambia in modo sostanziale.
 

@@ -101,8 +101,7 @@ export const t = {
     mlOk: 'Fatto. Controlla la posta per confermare (se richiesto).',
     mlErrore: 'Qualcosa non ha funzionato. Riprova più tardi.',
     mlEmailNonValida: 'Inserisci un indirizzo email valido.',
-    mlNonConfigurato:
-      'Iscrizione non ancora attiva su questo ambiente. Scrivici a',
+    mlNonConfigurato: 'Iscrizione non ancora attiva. Torna a trovarci presto.',
     mlInvio: 'Invio…',
   },
   en: {
@@ -161,8 +160,7 @@ export const t = {
     mlOk: 'Done. Check your inbox to confirm (if required).',
     mlErrore: 'Something went wrong. Please try again later.',
     mlEmailNonValida: 'Please enter a valid email address.',
-    mlNonConfigurato:
-      'Sign-up is not active on this environment yet. Write to us at',
+    mlNonConfigurato: 'Sign-up is not active yet. Check back soon.',
     mlInvio: 'Sending…',
   },
 } as const;

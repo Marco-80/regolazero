@@ -7,9 +7,9 @@ const { lang } = Astro.props;
 const s = t[lang];
 
 // Endpoint del backend (Cloudflare Worker, §7.5). Se non configurato, la
-// pagina ripiega su un mailto.
+// pagina mostra solo un avviso — nessuna email di contatto inventata
+// (CLAUDE.md §9.14: non c'è ancora un indirizzo reale confermato).
 const endpoint = import.meta.env.PUBLIC_MAILINGLIST_ENDPOINT ?? '';
-const contatto = import.meta.env.PUBLIC_MAILINGLIST_FALLBACK_EMAIL ?? 'info@regolazero.it';
 ---
 
 <h1>{s.mlTitolo}</h1>
@@ -46,9 +46,7 @@ const contatto = import.meta.env.PUBLIC_MAILINGLIST_FALLBACK_EMAIL ?? 'info@rego
       <p class="tm-form__msg" role="status" aria-live="polite" hidden></p>
     </form>
   ) : (
-    <p>
-      {s.mlNonConfigurato} <a href={`mailto:${contatto}`}>{contatto}</a>.
-    </p>
+    <p>{s.mlNonConfigurato}</p>
   )
 }
 
