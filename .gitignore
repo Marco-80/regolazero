@@ -6,3 +6,6 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# stato locale di Claude Code, non va versionato
+/.claude/

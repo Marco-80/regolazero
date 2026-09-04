@@ -73,7 +73,7 @@ REGOLAZERO/
 │   └── site/
 │       ├── logo-regolazero.png         logo bianco, sfondo trasparente
 │       ├── logo-regolazero-header.png  stessa cosa, versione più piccola
-│       └── lucchetto.png               icona lucchetto per il pulsante login
+│       └── cliccami.png                freccia+testo "Cliccami", trasparente
 └── .github/
     └── workflows/
         └── deploy.yml           push su main → pubblica il repo così com'è
@@ -117,32 +117,74 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   ("elimina tutto ciò che ha a che fare con Astro, Netlify"). Se in futuro
   serve di nuovo un login/blocco d'accesso, va ridiscusso da capo — non
   riportare dentro lo script di Netlify Identity di default.
-- **Interazione al click sul logo** (aggiunta 04/09 notte): il logo
-  (`#logo`) e i pannelli sotto (`#pannelli`) sono dentro un unico wrapper
-  `.salita` che si sposta come blocco. Al click: `.salita` risale con
-  `transform: translateY(...)` (transizione CSS 5,6s,
-  `cubic-bezier(0.83, 0, 0.17, 1)` — accelera e decelera molto
-  lentamente) finché il logo non è a 50px dal bordo superiore, e resta lì
-  fisso; contemporaneamente `#pannelli` passa da `opacity: 0` a `1` in
-  4s. Un solo click ha effetto (flag `spostato` in JS): i successivi non
-  fanno nulla. `#pannelli` contiene **3 div placeholder** (`.pannello`,
-  bordo sottile + leggero gradiente, `border-radius: 18px`) — due
-  laterali "orizzontali" (`.pannello--laterale`, aspect-ratio 380/249) e
-  uno centrale "verticale" più alto e leggermente più in basso
-  (`.pannello--centrale`, aspect-ratio 380/500, `margin-top` maggiore).
-  Sotto i 640px si impilano in colonna (sinistra, centro, destra) invece
-  di andare a capo storti. **Sono contenitori generici, vuoti apposta**:
-  in futuro ospiteranno moduli/link/immagini (non necessariamente
-  statici) — quando si decide il contenuto, lavorare dentro
-  `#pannello-sinistra` / `#pannello-centro` / `#pannello-destra`.
-- **Audio di sottofondo** (aggiunto 04/09 sera): player YouTube nascosto
-  (video `1YhKgK_2PU4`, dominio `youtube-nocookie.com` per ridurre il
-  tracciamento), via **YouTube IFrame Player API** ufficiale
+- **Interazione al click sul logo**: il logo (`#logo`) sta dentro
+  `.salita` che al click risale con `transform: translateY(...)`
+  (transizione CSS 5,6s, `cubic-bezier(0.83, 0, 0.17, 1)` — accelera e
+  decelera molto lentamente) finché il logo non è a 50px dal bordo
+  superiore, e resta lì fisso. Un solo click ha effetto (flag `spostato`
+  in JS): i successivi non fanno nulla.
+- **Indicatore "Cliccami"** (`#cliccami`, immagine freccia+testo
+  trasparente, `images/site/cliccami.png`): compare in dissolvenza
+  (1,2s) 4,5s dopo il caricamento della pagina, posizionata sopra il
+  logo (`position:absolute` dentro `.salita`, percentuali relative al
+  box del logo). Al click sul logo sparisce **di botto, non in
+  dissolvenza** — si ottiene togliendo la classe `.cliccami--visibile`
+  (che porta con sé sia `opacity:1` sia la `transition`): senza
+  transizione dichiarata sullo stato base, il cambio è istantaneo.
+  Se si clicca prima dei 4,5s il timer viene annullato e non compare
+  affatto. `pointer-events:none` per non intercettare i click destinati
+  al logo sottostante.
+- **Pannelli sotto il logo** (`#pannelli`, 3 div placeholder vuoti
+  `#pannello-sinistra/centro/destra`, in futuro ospiteranno moduli/link/
+  immagini non necessariamente statici): `position:fixed`, indipendenti
+  dal logo. Quando il logo è a **metà** della sua risalita (2,8s), i
+  pannelli partono da più in basso e risalgono in dissolvenza (3,4s,
+  più veloci del logo) fino quasi al centro schermo (+30px). La
+  posizione finale è **calcolata in JS a ogni click** (non in puro CSS)
+  sulle dimensioni reali di logo/pannelli/viewport, per garantire che
+  non finiscano mai sotto al logo, a nessuna risoluzione (desktop
+  incluso, su finestre basse). Layout: riga di 3 affiancati su schermi
+  larghi; sotto i 640px, griglia 2×2 con 2 quadrati sopra
+  (`#pannello-sinistra`/`#pannello-destra`) + 1 rettangolo largo sotto
+  (`#pannello-centro`, larghezza uguale ai due sopra insieme — se non
+  c'è spazio verticale si accorcia in altezza soltanto, disattivando
+  `aspect-ratio` via JS per non perdere la larghezza).
+  **Bug CSS incontrati e da ricordare**: (1) un elemento
+  `position:fixed` con `left`+`right` e poi una `width` esplicita in un
+  media query va centrato con `margin: 0 auto`, altrimenti il browser
+  scarta `right` e il box si incolla a sinistra; (2) impostare `height`
+  via JS su un elemento con `aspect-ratio` in CSS fa ricalcolare anche
+  la `width` — va disattivato `aspect-ratio: auto` insieme all'altezza.
+- **Audio di sottofondo**: player YouTube nascosto (video attuale
+  `c6RiHp2-bGY`; il precedente `1YhKgK_2PU4` resta commentato nel codice
+  nel caso si torni indietro), dominio `youtube-nocookie.com` per
+  ridurre il tracciamento, via **YouTube IFrame Player API** ufficiale
   (`https://www.youtube.com/iframe_api`) — nessun download/estrazione
-  audio, solo embed standard. Parte muto e in loop (i browser bloccano
-  l'autoplay con audio) e si sblocca al primo click/tocco/tasto
-  sulla pagina, a volume molto basso (`8/100`). Div contenitore
-  `#audio-sottofondo`, nascosto via CSS inline (1×1px, `opacity:0`).
+  audio, solo embed standard. **Parte con l'audio già attivo**
+  (`mute:0` nell'autoplay) a volume molto basso (`8/100`): i browser
+  bloccano quasi sempre l'autoplay con audio senza gesto dell'utente,
+  quindi come rete di sicurezza si sblocca comunque al primo click/
+  tocco/tasto sulla pagina se risulta ancora muto. **Pulsante
+  altoparlante** in alto a destra (`#audio-toggle`, icona SVG classica
+  on/off) come controllo manuale attiva/disattiva — sostituisce il
+  vecchio "sblocco al primo tocco" come unico controllo, non affidabile
+  su mobile. **Bug incontrato**: l'attributo/proprietà `hidden` su
+  `<svg>` non è affidabile in tutti i browser (`.hidden` può risultare
+  `undefined`, e `[hidden]{display:none}` dello UA stylesheet non
+  sempre si applica a `<svg>`) — si usa `setAttribute`/`removeAttribute`
+  esplicito più una regola CSS `svg[hidden]{display:none}` dedicata,
+  non ci si affida al default. Div contenitore `#audio-sottofondo`,
+  nascosto via CSS inline (1×1px, `opacity:0`).
+- **Respiro del logo più organico**: il `@keyframes respiro` (variazione
+  di luminosità, 10s ease-in-out infinite) varia leggermente la propria
+  durata a ogni ciclo (10s ± 1,5s) invece di restare fissa. **Bug
+  incontrato**: cambiare `animation-duration` a caldo sull'animazione in
+  corso fa scattare il valore, perché il browser ricalcola la fase
+  sul tempo totale trascorso dall'inizio, non da quel ciclo — si
+  riavvia invece l'animazione da zero a ogni ciclo
+  (`animation:none` + reflow forzato + nuova `animation` con la nuova
+  durata), invisibile perché inizio e fine del keyframe coincidono
+  (`brightness(1)` a 0% e 100%).
 
 ---
 

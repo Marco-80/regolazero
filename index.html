@@ -20,6 +20,30 @@
       z-index: 0;
       filter: blur(70px);
     }
+    #audio-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 2;
+      width: 2.75rem;
+      height: 2.75rem;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cfcfcf;
+      cursor: pointer;
+    }
+    #audio-toggle:hover,
+    #audio-toggle:focus-visible {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    /* [hidden] su <svg> non è affidabile su tutti i browser: regola
+       esplicita invece di fidarsi dello stylesheet di default. */
+    #audio-toggle svg[hidden] {
+      display: none;
+    }
     .contenuto {
       position: relative;
       z-index: 1;
@@ -43,20 +67,50 @@
     @media (prefers-reduced-motion: reduce) {
       .logo { animation: none; }
     }
-    /* Blocco logo + pannelli: si sposta insieme, come un'unica colonna,
-       così i pannelli restano sempre appena sotto il logo. */
     .salita {
+      position: relative;
       transition: transform 5.6s cubic-bezier(0.83, 0, 0.17, 1);
     }
+    /* Indicatore "Cliccami": freccia verso il logo, in dissolvenza dopo
+       qualche secondo. Sparisce subito (non in dissolvenza) al click. */
+    #cliccami {
+      position: absolute;
+      left: 48%;
+      top: -30%;
+      width: 40%;
+      height: auto;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    #cliccami.cliccami--visibile {
+      opacity: 1;
+      transition: opacity 1.2s ease;
+    }
+    /* Pannelli: indipendenti dal logo. Partono più in basso del centro
+       schermo e in dissolvenza risalgono fino al centro, più veloci
+       della risalita del logo (3.4s contro 5.6s). */
     .pannelli {
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      right: 0;
+      top: 50%;
       display: flex;
       justify-content: center;
       align-items: flex-start;
       flex-wrap: wrap;
       gap: clamp(1rem, 3vw, 2rem);
-      margin-top: clamp(1.5rem, 4vw, 3rem);
+      padding: 0 1.25rem;
+      box-sizing: border-box;
       opacity: 0;
-      transition: opacity 4s ease;
+      transform: translateY(calc(-50% + 22vh));
+      transition: transform 3.4s cubic-bezier(0.83, 0, 0.17, 1), opacity 3.4s ease;
+    }
+    .pannelli--visibile {
+      opacity: 1;
+      /* transform finale impostato via JS (calcolato per non finire mai
+         sotto il logo, a qualunque risoluzione) */
     }
     .pannello {
       border: 1px solid rgba(207, 207, 207, 0.35);
@@ -73,15 +127,29 @@
       aspect-ratio: 380 / 500;
       margin-top: clamp(1.5rem, 6vw, 5rem);
     }
-    /* Schermi stretti: 3 affiancati non ci stanno, si impilano in
-       ordine (sinistra, centro, destra) invece di andare a capo storti. */
+    /* Schermi stretti: non 3 affiancati né impilati in colonna, ma
+       2 quadrati in alto (sinistra/destra) + 1 rettangolo largo sotto
+       (centro), tutti dentro lo schermo. */
     @media (max-width: 640px) {
-      .pannelli { flex-direction: column; align-items: center; }
+      .pannelli {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "sinistra destra" "centro centro";
+        gap: 0.75rem;
+        width: min(92vw, 460px);
+        margin-left: auto;
+        margin-right: auto;
+      }
       .pannello--laterale,
       .pannello--centrale {
-        width: min(80vw, 380px);
+        width: auto;
         margin-top: 0;
       }
+      .pannello--laterale { aspect-ratio: 1 / 1; }
+      .pannello--centrale { aspect-ratio: 14 / 15; }
+      #pannello-sinistra { grid-area: sinistra; }
+      #pannello-destra { grid-area: destra; }
+      #pannello-centro { grid-area: centro; }
     }
   </style>
 </head>
@@ -89,27 +157,44 @@
   <div id="nebbia"></div>
   <div id="audio-sottofondo" style="position: fixed; width: 1px; height: 1px; overflow: hidden; opacity: 0;"></div>
 
+  <button type="button" id="audio-toggle" aria-label="Attiva audio" aria-pressed="false">
+    <svg id="icona-audio-off" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+      <path d="M3 10v4h4l5 5V5L7 10H3z"/>
+      <path d="M19.5 12l2.47-2.47-1.06-1.06L18.44 10.94 15.97 8.47 14.91 9.53l2.47 2.47-2.47 2.47 1.06 1.06 2.47-2.47 2.47 2.47 1.06-1.06L19.5 12z"/>
+    </svg>
+    <svg id="icona-audio-on" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" hidden>
+      <path d="M3 10v4h4l5 5V5L7 10H3z"/>
+      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.06c1.48-.74 2.5-2.26 2.5-4.03z"/>
+      <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+    </svg>
+  </button>
+
+  <div class="pannelli" id="pannelli">
+    <div class="pannello pannello--laterale" id="pannello-sinistra"></div>
+    <div class="pannello pannello--centrale" id="pannello-centro"></div>
+    <div class="pannello pannello--laterale" id="pannello-destra"></div>
+  </div>
+
   <div class="contenuto">
     <div class="salita" id="salita">
       <img class="logo" id="logo" src="/images/site/logo-regolazero.png" alt="RegolaZero" width="1600" height="656" />
-      <div class="pannelli" id="pannelli">
-        <div class="pannello pannello--laterale" id="pannello-sinistra"></div>
-        <div class="pannello pannello--centrale" id="pannello-centro"></div>
-        <div class="pannello pannello--laterale" id="pannello-destra"></div>
-      </div>
+      <img id="cliccami" src="/images/site/cliccami.png" alt="" width="224" height="88" />
     </div>
   </div>
 
   <script>
     // Al click sul logo: risalita fluida (5,6s, accelera e decelera
-    // lentamente) fino a fermarsi a 50px dal bordo superiore, e insieme
-    // (in dissolvenza) compaiono i 3 pannelli sotto. Una volta sola: click
+    // lentamente) fino a fermarsi a 50px dal bordo superiore. Quando il
+    // logo è a metà della sua risalita, partono (indipendenti dal logo)
+    // i 3 pannelli: più in basso, risalgono in dissolvenza fino quasi al
+    // centro schermo, più veloci del logo (3.4s). Una volta sola: click
     // successivi non fanno nulla.
     (function () {
       var logo = document.getElementById('logo');
       var salita = document.getElementById('salita');
       var pannelli = document.getElementById('pannelli');
       var spostato = false;
+      var DURATA_LOGO_MS = 5600;
 
       logo.addEventListener('click', function () {
         if (spostato) return;
@@ -118,7 +203,94 @@
         var margine = 50;
         var delta = margine - rect.top; // negativo: risale
         salita.style.transform = 'translateY(' + delta + 'px)';
-        pannelli.style.opacity = '1';
+
+        // Posizione finale dei pannelli: centro schermo + 30px, MA mai
+        // sopra al logo (che finirà a "margine" + la sua altezza) — a
+        // nessuna risoluzione, calcolato sulle dimensioni reali di
+        // viewport/logo/pannelli. Il delta è relativo all'ancora CSS
+        // "top: 50%" (non alla posizione attuale, già spostata dal
+        // transform iniziale: settare transform via JS lo sostituisce,
+        // non lo somma).
+        var logoBottomFinale = margine + rect.height;
+        var altezzaPannelli = pannelli.getBoundingClientRect().height;
+        var margineSicurezza = 24;
+        var centroDesiderato = window.innerHeight / 2 + 30;
+        var topDesiderato = centroDesiderato - altezzaPannelli / 2;
+        var topMinimo = logoBottomFinale + margineSicurezza;
+        var topFinale = Math.max(topDesiderato, topMinimo);
+        var deltaPannelli = topFinale - window.innerHeight / 2;
+
+        // Mobile (layout a griglia: 2 quadrati sopra + 1 rettangolo largo
+        // sotto): se non c'è spazio verticale a sufficienza, il blocco
+        // sotto si accorcia (perde il suo aspect-ratio ideale) invece di
+        // uscire dallo schermo.
+        if (window.matchMedia('(max-width: 640px)').matches) {
+          var centro = document.getElementById('pannello-centro');
+          var altezzaRigaAlta = document.getElementById('pannello-sinistra').getBoundingClientRect().height;
+          var gapMobile = 12; // 0.75rem
+          var margineInferiore = 16;
+          var spazioDisponibile = window.innerHeight - (topFinale + altezzaRigaAlta + gapMobile) - margineInferiore;
+          if (spazioDisponibile > 40 && centro.getBoundingClientRect().height > spazioDisponibile) {
+            // aspect-ratio, altrimenti attivo, ricalcolerebbe la
+            // larghezza in base alla nuova altezza: va disattivato per
+            // mantenere piena la larghezza (larga come i due blocchi
+            // sopra insieme) e accorciare solo l'altezza.
+            centro.style.aspectRatio = 'auto';
+            centro.style.height = spazioDisponibile + 'px';
+          }
+        }
+
+        setTimeout(function () {
+          pannelli.classList.add('pannelli--visibile');
+          pannelli.style.transform = 'translateY(' + deltaPannelli + 'px)';
+        }, DURATA_LOGO_MS / 2);
+      });
+    })();
+  </script>
+
+  <script>
+    // Indicatore "Cliccami": compare in dissolvenza 4,5s dopo il
+    // caricamento della pagina. Sparisce subito (non in dissolvenza,
+    // "di botto": si toglie anche la transizione, non solo la classe)
+    // al click sul logo — e se si clicca prima che compaia, il timer
+    // viene annullato e non compare affatto.
+    (function () {
+      var logo = document.getElementById('logo');
+      var cliccami = document.getElementById('cliccami');
+      var RITARDO_MS = 4500;
+
+      var timer = setTimeout(function () {
+        cliccami.classList.add('cliccami--visibile');
+      }, RITARDO_MS);
+
+      logo.addEventListener('click', function () {
+        clearTimeout(timer);
+        cliccami.classList.remove('cliccami--visibile'); // niente transizione: sparisce di botto
+      });
+    })();
+  </script>
+
+  <script>
+    // Il "respiro" del logo (variazione di luminosità) è un @keyframes
+    // CSS a durata fissa, quindi perfettamente regolare/meccanico. Per
+    // renderlo più organico, a ogni ciclo si varia leggermente la durata
+    // (10s ± 1,5s) invece di lasciarla identica ogni volta — ma SEMPRE
+    // in modo fluido: limitarsi a cambiare "animation-duration" a caldo
+    // scatta, perché il browser ricalcola il punto dell'animazione sul
+    // tempo trascorso totale (non da quando è iniziato il ciclo). Si
+    // riparte quindi da zero un'animazione nuova a ogni ciclo — invisibile,
+    // perché inizio (0%) e fine (100%) del keyframe hanno lo stesso valore.
+    (function () {
+      var logo = document.getElementById('logo');
+      var DURATA_BASE = 10; // secondi, deve combaciare col CSS
+      var VARIAZIONE = 1.5; // secondi, in più o in meno
+
+      logo.addEventListener('animationiteration', function (e) {
+        if (e.animationName !== 'respiro') return;
+        var durata = DURATA_BASE + (Math.random() * 2 - 1) * VARIAZIONE;
+        logo.style.animation = 'none';
+        void logo.offsetWidth; // forza il reflow: il browser "dimentica" lo stato precedente
+        logo.style.animation = 'respiro ' + durata.toFixed(2) + 's ease-in-out infinite';
       });
     })();
   </script>
@@ -175,13 +347,36 @@
 
   <script>
     // Audio di sottofondo: player YouTube nascosto (youtube-nocookie.com),
-    // in loop, a volume molto basso. Parte muto (i browser bloccano
-    // l'autoplay con audio) e si sblocca al primo tocco/click/tasto.
+    // in loop, a volume molto basso. Parte con l'audio già attivo (non
+    // muto): i browser però bloccano quasi sempre l'autoplay con audio
+    // senza un'interazione dell'utente, quindi come rete di sicurezza lo
+    // sblocca comunque al primo tocco/click/tasto se serve. Il pulsante
+    // in alto a destra resta il controllo manuale attiva/disattiva.
     (function () {
-      var VIDEO_ID = '1YhKgK_2PU4';
+      var VIDEO_ID = 'c6RiHp2-bGY';
+      // var VIDEO_ID_PRECEDENTE = '1YhKgK_2PU4'; // audio di prima, tenuto qui se si torna indietro
       var VOLUME = 8; // 0-100, molto basso
       var player = null;
-      var sbloccato = false;
+      var attivo = true; // stato desiderato: parte attivo
+
+      var btn = document.getElementById('audio-toggle');
+      var iconaOn = document.getElementById('icona-audio-on');
+      var iconaOff = document.getElementById('icona-audio-off');
+
+      function aggiornaIcona() {
+        // niente .hidden (non affidabile su <svg> in tutti i browser):
+        // attributo esplicito.
+        if (attivo) {
+          iconaOn.removeAttribute('hidden');
+          iconaOff.setAttribute('hidden', '');
+        } else {
+          iconaOff.removeAttribute('hidden');
+          iconaOn.setAttribute('hidden', '');
+        }
+        btn.setAttribute('aria-pressed', attivo ? 'true' : 'false');
+        btn.setAttribute('aria-label', attivo ? 'Disattiva audio' : 'Attiva audio');
+      }
+      aggiornaIcona(); // icona corretta da subito, senza aspettare l'API YouTube
 
       var tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
@@ -193,7 +388,7 @@
           videoId: VIDEO_ID,
           playerVars: {
             autoplay: 1,
-            mute: 1,
+            mute: 0, // tenta l'autoplay con audio
             loop: 1,
             playlist: VIDEO_ID,
             controls: 0,
@@ -211,19 +406,33 @@
         });
       };
 
-      function sbloccaAudio() {
-        if (sbloccato || !player || typeof player.unMute !== 'function') return;
-        sbloccato = true;
-        player.unMute();
-        player.setVolume(VOLUME);
-        player.playVideo();
-        ['click', 'touchstart', 'keydown'].forEach(function (ev) {
-          document.removeEventListener(ev, sbloccaAudio);
-        });
-      }
+      btn.addEventListener('click', function () {
+        if (!player || typeof player.unMute !== 'function') return;
+        attivo = !attivo;
+        if (attivo) {
+          player.unMute();
+          player.setVolume(VOLUME);
+          player.playVideo();
+        } else {
+          player.mute();
+        }
+        aggiornaIcona();
+      });
 
+      // Rete di sicurezza: se il browser ha bloccato l'autoplay con audio
+      // (resta muto nonostante mute:0), lo sblocca al primo tocco/click/
+      // tasto sulla pagina — solo se l'utente non ha nel frattempo
+      // disattivato l'audio col pulsante.
+      function sbloccaSeServe() {
+        if (!player || typeof player.isMuted !== 'function') return;
+        if (attivo && player.isMuted()) {
+          player.unMute();
+          player.setVolume(VOLUME);
+          player.playVideo();
+        }
+      }
       ['click', 'touchstart', 'keydown'].forEach(function (ev) {
-        document.addEventListener(ev, sbloccaAudio);
+        document.addEventListener(ev, sbloccaSeServe);
       });
     })();
   </script>
