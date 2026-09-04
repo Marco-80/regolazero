@@ -93,14 +93,19 @@ pagine, si copia l'HTML in ciascun file (è il costo accettato della scelta
 
 **L'unica cosa che l'utente ha detto esplicitamente di aver apprezzato**
 del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
-Versione attuale, **volutamente minima, senza JavaScript**:
 
 - Sfondo scuro fisso `#121212` (non segue tema chiaro/scuro di sistema: il
   logo è bianco su trasparente, deve restare leggibile sempre).
 - Logo centrato (`images/site/logo-regolazero.png`), sotto il testo
   "Il sito è in costruzione. Torna presto."
-- **Nient'altro.** Niente pulsante di login, niente script esterni, niente
-  Netlify: rimossi su richiesta esplicita dell'utente il 04/09 sera
+- **Nebbia di sfondo animata**: qualche macchia bianca appena percettibile
+  (alpha 5/255), sfocata via CSS (`filter: blur(70px)`), che deriva
+  lentissima con **p5.js** (rumore di Perlin, `t += 0.0015` per frame) —
+  script caricato da CDN (`cdnjs.cloudflare.com/.../p5.min.js`), nessuna
+  build, coerente con §1. `pointer-events` non toccati (il canvas sta
+  dietro al contenuto, `z-index: 0`).
+- Niente pulsante di login, niente Netlify: rimossi su richiesta esplicita
+  dell'utente il 04/09 sera
   ("elimina tutto ciò che ha a che fare con Astro, Netlify"). Se in futuro
   serve di nuovo un login/blocco d'accesso, va ridiscusso da capo — non
   riportare dentro lo script di Netlify Identity di default.

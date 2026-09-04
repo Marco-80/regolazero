@@ -9,11 +9,23 @@
     body {
       margin: 0;
       min-height: 100svh;
-      display: grid;
-      place-items: center;
+      overflow: hidden;
       background: #121212;
       color: #cfcfcf;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    #nebbia {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      filter: blur(70px);
+    }
+    .contenuto {
+      position: relative;
+      z-index: 1;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
       text-align: center;
       padding: 2rem 1.25rem;
       box-sizing: border-box;
@@ -23,9 +35,51 @@
   </style>
 </head>
 <body>
-  <div>
-    <img class="logo" src="/images/site/logo-regolazero.png" alt="RegolaZero" width="1600" height="656" />
-    <p>Il sito è in costruzione. Torna presto.</p>
+  <div id="nebbia"></div>
+
+  <div class="contenuto">
+    <div>
+      <img class="logo" src="/images/site/logo-regolazero.png" alt="RegolaZero" width="1600" height="656" />
+      <p>Il sito è in costruzione. Torna presto.</p>
+    </div>
   </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script>
+    // Nebbia di sfondo: qualche macchia morbida che deriva lentissima con
+    // rumore di Perlin, sfocata via CSS, quasi impercettibile.
+    new p5(function (p) {
+      var macchie = [];
+      var N = 5;
+
+      p.setup = function () {
+        var c = p.createCanvas(p.windowWidth, p.windowHeight);
+        c.parent('nebbia');
+        p.noStroke();
+        for (var i = 0; i < N; i++) {
+          macchie.push({
+            seed: i * 100,
+            r: p.random(0.35, 0.6) * Math.max(p.width, p.height),
+          });
+        }
+      };
+
+      p.windowResized = function () {
+        p.resizeCanvas(p.windowWidth, p.windowHeight);
+      };
+
+      p.draw = function () {
+        p.clear();
+        var t = p.frameCount * 0.0015; // lentissimo
+        for (var i = 0; i < macchie.length; i++) {
+          var m = macchie[i];
+          var nx = p.noise(m.seed, t) * p.width;
+          var ny = p.noise(m.seed + 50, t) * p.height;
+          p.fill(255, 255, 255, 5); // appena percettibile
+          p.ellipse(nx, ny, m.r, m.r);
+        }
+      };
+    });
+  </script>
 </body>
 </html>
