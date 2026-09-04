@@ -26,10 +26,13 @@ a configurare servizi esterni (Netlify privato di default, funzioni a
 pagamento, certificato HTTPS lento, bug di timing tra librerie, un secondo
 login da capire) ha superato il valore di quello che l'automazione dava.
 L'utente ha chiesto **esplicitamente** di cancellare tutto e ripartire con
-codice semplice, scritto a mano, senza toolchain. **Non riproporre Astro,
-Decap, Strapi/Payload/Ghost/WordPress, Bootstrap o jQuery senza che sia
-l'utente a richiederlo di nuovo direttamente** — è già stato deciso di no,
-più volte.
+codice semplice, scritto a mano, senza toolchain — e poco dopo ha chiesto
+di togliere **anche** il pulsante di login Netlify Identity dalla pagina
+(prima tenuto perché "funzionava già"): sulla pagina non deve restare
+**nulla** legato a Netlify. **Non riproporre Astro, Decap, Netlify (in
+nessuna forma — Identity/Git Gateway/hosting), Strapi/Payload/Ghost/
+WordPress, Bootstrap o jQuery senza che sia l'utente a richiederlo di
+nuovo direttamente** — è già stato deciso di no, più volte.
 
 ---
 
@@ -45,17 +48,15 @@ terzi) e **funziona**. Un reset del codice non tocca questi pezzi:
   `origin` già collegato in locale, branch `main`.
 - **GitHub Pages**: Settings → Pages → Source = **GitHub Actions**. File
   `CNAME` nel repo mantiene il dominio custom.
-- **HTTPS**: certificato in emissione automatica da parte di GitHub dopo
-  che il DNS check è risultato "successful" (04/09 sera). Controllare
-  Settings → Pages → **Enforce HTTPS**: appena il checkbox è cliccabile
-  (non più grigio), spuntarlo.
-- **Netlify Identity** (usato SOLO per il login di questa pagina, non per
-  CMS/backend — vedi §5): progetto **regolazero.netlify.app** (Project ID
-  `83295086-8ed3-4cc5-b43b-23bd362780c3`), Identity abilitato, progetto
-  reso **pubblico** (era "Private" di default e bloccava con 401 anche le
-  chiamate API, non solo la navigazione — attenzione se si ricrea).
-  Registration = **Open**, `autoconfirm: true` (chi si registra è subito
-  attivo, nessuna email di conferma da gestire).
+- **HTTPS**: ✅ attivo — certificato emesso, `http://` reindirizza da solo
+  a `https://` (verificato la sera del 04/09).
+- **Netlify Identity — NON PIÙ USATO sul sito** (rimosso da `index.html` su
+  richiesta esplicita dell'utente: "elimina tutto ciò che ha a che fare con
+  Astro, Netlify"). L'account/progetto Netlify **esiste ancora**
+  (`regolazero.netlify.app`, Project ID
+  `83295086-8ed3-4cc5-b43b-23bd362780c3`) — non è stato cancellato, solo
+  scollegato dalla pagina. Non riattivarlo/riusarlo senza che l'utente lo
+  chieda di nuovo.
 
 ---
 
@@ -91,33 +92,18 @@ pagine, si copia l'HTML in ciascun file (è il costo accettato della scelta
 ## 4. `index.html` — coming-soon (l'unica pagina, per ora)
 
 **L'unica cosa che l'utente ha detto esplicitamente di aver apprezzato**
-del lavoro precedente: tenerla identica, non ridisegnarla senza che lo
-chieda.
+del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
+Versione attuale, **volutamente minima, senza JavaScript**:
 
 - Sfondo scuro fisso `#121212` (non segue tema chiaro/scuro di sistema: il
   logo è bianco su trasparente, deve restare leggibile sempre).
 - Logo centrato (`images/site/logo-regolazero.png`), sotto il testo
   "Il sito è in costruzione. Torna presto."
-- Pulsante a bandiera d'angolo in alto a destra (lucchetto) che apre il
-  login/registrazione **Netlify Identity** (script
-  `https://identity.netlify.com/v1/netlify-identity-widget.js`,
-  `APIUrl: https://regolazero.netlify.app/.netlify/identity`).
-  Registrazione aperta, ma serve un ruolo (`preview` o `editor`) assegnato
-  a mano da Identity → Users → utente → Roles perché serva a qualcosa oltre
-  a registrarsi — per ora, dato che non c'è altro sito dietro, il login
-  riuscito con ruolo valido mostra solo un messaggio di conferma (non
-  reindirizza più da nessuna parte: non c'è ancora un "resto del sito").
-
-**Due bug reali, già risolti, da NON reintrodurre se si riscrive questa
-pagina:**
-1. Il tag `<script src="https://identity.netlify.com/...">` deve essere
-   un tag `<script>` normale in HTML puro — nessun problema qui (il bug
-   `is:inline` riguardava solo Astro, non si applica più).
-2. **I listener `netlifyIdentity.on(...)` vanno registrati PRIMA di
-   chiamare `netlifyIdentity.init(...)`**, non dopo: l'evento `init` può
-   scattare nello stesso tick della chiamata, e un listener registrato
-   dopo lo perde (chi torna già loggato non verrebbe riconosciuto). Il
-   codice in `index.html` è già corretto in questo ordine.
+- **Nient'altro.** Niente pulsante di login, niente script esterni, niente
+  Netlify: rimossi su richiesta esplicita dell'utente il 04/09 sera
+  ("elimina tutto ciò che ha a che fare con Astro, Netlify"). Se in futuro
+  serve di nuovo un login/blocco d'accesso, va ridiscusso da capo — non
+  riportare dentro lo script di Netlify Identity di default.
 
 ---
 
