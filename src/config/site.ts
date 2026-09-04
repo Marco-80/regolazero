@@ -28,7 +28,7 @@ export const BYPASS_KEY = 'rz-bypass-coming-soon';
  * resta presente ma non fa nulla di funzionale (nessun endpoint reale a cui
  * parlare).
  */
-export const NETLIFY_IDENTITY_URL = '';
+export const NETLIFY_IDENTITY_URL = 'https://regolazero.netlify.app/.netlify/identity';
 
 /**
  * Registrazione APERTA a chiunque (Netlify Identity → Registration → Open),
