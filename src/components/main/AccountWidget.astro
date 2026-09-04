@@ -91,7 +91,9 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
 <style>
   .rz-account {
     font-size: 0.85rem;
-    color: var(--rz-muted);
+    /* L'header è una barra scura fissa: colori chiari fissi, non i token
+       chiaro/scuro pensati per lo sfondo del resto del sito. */
+    color: #b9b7b2;
     white-space: nowrap;
   }
   .rz-account a {
@@ -99,6 +101,6 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
     text-decoration: none;
   }
   .rz-account a:hover {
-    color: var(--rz-text);
+    color: #fff;
   }
 </style>

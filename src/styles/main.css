@@ -4,29 +4,34 @@
    ============================================================ */
 
 :root {
-  --rz-bg: #faf9f7;
+  --rz-bg: #faf8f5;
   --rz-surface: #ffffff;
-  --rz-text: #1b1b1c;
-  --rz-muted: #5c5c60;
-  --rz-border: #e3e1dc;
-  --rz-accent: #7a1f1f; /* provvisorio, tono publisher discreto */
+  --rz-text: #201d1c;
+  --rz-muted: #625d59;
+  --rz-border: #e6e1d9;
+  --rz-accent: #7a1f1f;
+  --rz-accent-2: #9c6b1f; /* ottone/oro discreto, per dettagli e hover */
   --rz-accent-contrast: #ffffff;
+  --rz-ink: #141414; /* header, chip, footer: scuro fisso indipendente dal tema */
 
   --rz-max-width: 68rem;
-  --rz-radius: 6px;
+  --rz-radius: 8px;
   --rz-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
   --rz-font-serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --rz-shadow: 0 1px 2px rgba(20, 15, 10, 0.04), 0 8px 24px -12px rgba(20, 15, 10, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --rz-bg: #17171a;
-    --rz-surface: #1f1f23;
-    --rz-text: #ececec;
-    --rz-muted: #a2a2a8;
-    --rz-border: #33333a;
+    --rz-bg: #17161a;
+    --rz-surface: #1f1e22;
+    --rz-text: #ede9e3;
+    --rz-muted: #a6a19b;
+    --rz-border: #34322f;
     --rz-accent: #d9736f;
+    --rz-accent-2: #c9a24a;
+    --rz-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -39,12 +44,21 @@ body {
   background: var(--rz-bg);
   color: var(--rz-text);
   font-family: var(--rz-font-sans);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 a { color: var(--rz-accent); }
 
 img { max-width: 100%; height: auto; }
+
+h1, h2, h3, h4 {
+  font-family: var(--rz-font-serif);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+h2 { font-size: clamp(1.35rem, 2.6vw, 1.8rem); margin-top: 2.5rem; }
+h3 { font-size: 1.15rem; }
 
 .rz-container {
   max-width: var(--rz-max-width);
@@ -52,11 +66,32 @@ img { max-width: 100%; height: auto; }
   padding-inline: 1.25rem;
 }
 
-.rz-site-header,
-.rz-site-footer {
-  border-bottom: 1px solid var(--rz-border);
-  background: var(--rz-surface);
+/* ---------- Pulsanti ---------- */
+.rz-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
 }
+.rz-btn--primary {
+  background: var(--rz-accent);
+  color: var(--rz-accent-contrast);
+}
+.rz-btn--primary:hover { background: color-mix(in srgb, var(--rz-accent) 85%, black); }
+.rz-btn--ghost {
+  background: transparent;
+  color: var(--rz-text);
+  border-color: var(--rz-border);
+}
+.rz-btn--ghost:hover { border-color: var(--rz-accent); color: var(--rz-accent); }
+
 .rz-site-footer {
   border-bottom: 0;
   border-top: 1px solid var(--rz-border);
@@ -65,28 +100,57 @@ img { max-width: 100%; height: auto; }
   margin-top: 4rem;
 }
 
+/* La barra dell'header è scura fissa (non segue il tema chiaro/scuro):
+   il logo è bianco su trasparente, così è sempre leggibile e può stare
+   direttamente sullo sfondo, senza un riquadro attorno. */
+.rz-site-header {
+  background: #141414;
+}
+
 .rz-site-header__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding-block: 1rem;
+  padding-block: 0.85rem;
+  position: relative;
 }
 
 .rz-site-header__brand {
   display: inline-flex;
   align-items: center;
-  /* Il logo è bianco su trasparente: un chip scuro fisso garantisce
-     contrasto sia in tema chiaro che scuro. */
-  background: #141414;
-  border-radius: 8px;
-  padding: 0.4rem 0.8rem;
   line-height: 0;
 }
 .rz-site-header__brand img {
   display: block;
-  height: 1.9rem;
+  height: 2.75rem;
   width: auto;
+}
+
+/* ---------- Menu a hamburger (mobile) ---------- */
+.rz-nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.rz-nav-toggle span {
+  display: block;
+  height: 2px;
+  background: #ede9e3;
+  border-radius: 2px;
+}
+
+.rz-nav-panel {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .rz-nav {
@@ -95,17 +159,58 @@ img { max-width: 100%; height: auto; }
   gap: 1.1rem;
   font-size: 0.95rem;
 }
-.rz-nav a { text-decoration: none; color: var(--rz-muted); }
-.rz-nav a[aria-current="page"] { color: var(--rz-text); font-weight: 600; }
+.rz-nav a { text-decoration: none; color: #b9b7b2; }
+.rz-nav a[aria-current="page"] { color: #fff; font-weight: 600; }
+
+@media (max-width: 52rem) {
+  .rz-nav-toggle { display: flex; }
+  .rz-nav-panel {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    background: #141414;
+    padding: 1.25rem;
+    border-top: 1px solid #2c2c2c;
+  }
+  .rz-nav-panel.is-open { display: flex; }
+  .rz-nav { flex-direction: column; gap: 0.9rem; }
+}
 
 main { padding-block: 2.5rem; }
 
-h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
+/* ---------- Hero della home ---------- */
+.rz-home-hero {
+  padding-block: 1.5rem 3rem;
+  border-bottom: 1px solid var(--rz-border);
+  margin-bottom: 2.5rem;
+}
+.rz-eyebrow {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rz-accent);
+}
+.rz-home-hero h1 { margin: 0 0 1rem; max-width: 22ch; }
+.rz-home-hero__lead {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--rz-muted);
+  max-width: 42rem;
+}
+
+h1 { font-size: clamp(2rem, 4.4vw, 3rem); line-height: 1.08; }
 
 .rz-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: 1.5rem;
 }
 
 .rz-card {
@@ -113,19 +218,37 @@ h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
   border: 1px solid var(--rz-border);
   border-radius: var(--rz-radius);
   overflow: hidden;
+  box-shadow: var(--rz-shadow);
 }
-.rz-card__body { padding: 1rem; }
+.rz-card:hover {
+  border-color: var(--rz-accent-2);
+  transform: translateY(-3px);
+}
+.rz-card { transition: transform 0.18s ease, border-color 0.18s ease; }
+.rz-card__body { padding: 1.15rem; }
+.rz-card__body h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
 
 /* ---------- Header di sezione (catalogo giochi / articoli) ---------- */
 .rz-page-hero {
+  position: relative;
   border-bottom: 1px solid var(--rz-border);
   padding-bottom: 1.75rem;
   margin-bottom: 1.75rem;
 }
-.rz-page-hero h1 { margin: 0 0 0.4rem; }
+.rz-page-hero::before {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 3px;
+  margin-bottom: 1rem;
+  background: var(--rz-accent);
+  border-radius: 2px;
+}
+.rz-page-hero h1 { margin: 0 0 0.5rem; }
 .rz-page-hero p {
   margin: 0;
   color: var(--rz-muted);
+  font-size: 1.05rem;
   max-width: 40rem;
 }
 
@@ -147,11 +270,11 @@ h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
   background: var(--rz-surface);
   cursor: pointer;
 }
-.rz-pill:hover { color: var(--rz-text); }
+.rz-pill:hover { color: var(--rz-text); border-color: var(--rz-accent-2); }
 .rz-pill[aria-current='true'] {
-  background: var(--rz-text);
-  color: var(--rz-bg);
-  border-color: var(--rz-text);
+  background: var(--rz-accent);
+  color: var(--rz-accent-contrast);
+  border-color: var(--rz-accent);
 }
 
 /* ---------- Copertine con fallback (nessuna immagine reale ancora) ---------- */
@@ -159,12 +282,20 @@ h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--rz-surface), var(--rz-border));
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rz-ink) 92%, transparent) 0 2px,
+      transparent 2px 22px
+    ),
+    linear-gradient(150deg, var(--rz-ink), color-mix(in srgb, var(--rz-ink) 70%, var(--rz-accent)));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rz-muted);
+  color: #d8d5cf;
+  font-family: var(--rz-font-serif);
   font-weight: 700;
+  font-size: 1.05rem;
   text-align: center;
   padding: 1rem;
 }
@@ -207,10 +338,17 @@ h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
   position: relative;
   border-radius: var(--rz-radius);
   overflow: hidden;
-  min-height: 18rem;
+  min-height: 20rem;
   display: flex;
   align-items: flex-end;
-  background: linear-gradient(135deg, var(--rz-surface), var(--rz-border));
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rz-ink) 92%, transparent) 0 2px,
+      transparent 2px 26px
+    ),
+    linear-gradient(150deg, var(--rz-ink), color-mix(in srgb, var(--rz-ink) 65%, var(--rz-accent)));
+  box-shadow: var(--rz-shadow);
   margin: 0 0 2rem;
 }
 .rz-game-hero img {
@@ -264,8 +402,10 @@ h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
 .rz-infobox {
   background: var(--rz-surface);
   border: 1px solid var(--rz-border);
+  border-top: 3px solid var(--rz-accent);
   border-radius: var(--rz-radius);
   padding: 1.25rem;
+  box-shadow: var(--rz-shadow);
 }
 .rz-infobox dt {
   font-size: 0.72rem;
@@ -283,7 +423,7 @@ h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
   border-radius: var(--rz-radius);
   overflow: hidden;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, var(--rz-surface), var(--rz-border));
+  box-shadow: var(--rz-shadow);
 }
 .rz-article-cover img {
   width: 100%;

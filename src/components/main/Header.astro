@@ -24,15 +24,47 @@ const links = [
         height="246"
       />
     </a>
-    <nav class="rz-nav" aria-label="Navigazione principale">
-      {
-        links.map((l) => (
-          <a href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>
-            {l.label}
-          </a>
-        ))
-      }
-    </nav>
-    <AccountWidget />
+
+    <button
+      type="button"
+      class="rz-nav-toggle"
+      id="rz-nav-toggle"
+      aria-expanded="false"
+      aria-controls="rz-nav-panel"
+      aria-label="Apri il menu"
+    >
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="rz-nav-panel" id="rz-nav-panel">
+      <nav class="rz-nav" aria-label="Navigazione principale">
+        {
+          links.map((l) => (
+            <a href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>
+              {l.label}
+            </a>
+          ))
+        }
+      </nav>
+      <AccountWidget />
+    </div>
   </div>
 </header>
+
+<script>
+  const btn = document.getElementById('rz-nav-toggle');
+  const panel = document.getElementById('rz-nav-panel');
+  if (btn && panel) {
+    btn.addEventListener('click', () => {
+      const aperto = panel.classList.toggle('is-open');
+      btn.setAttribute('aria-expanded', String(aperto));
+    });
+    // chiudi il menu quando si clicca un link (utile su mobile)
+    panel.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).tagName === 'A') {
+        panel.classList.remove('is-open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+</script>
