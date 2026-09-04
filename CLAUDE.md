@@ -109,6 +109,14 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   ("elimina tutto ciò che ha a che fare con Astro, Netlify"). Se in futuro
   serve di nuovo un login/blocco d'accesso, va ridiscusso da capo — non
   riportare dentro lo script di Netlify Identity di default.
+- **Audio di sottofondo** (aggiunto 04/09 sera): player YouTube nascosto
+  (video `1YhKgK_2PU4`, dominio `youtube-nocookie.com` per ridurre il
+  tracciamento), via **YouTube IFrame Player API** ufficiale
+  (`https://www.youtube.com/iframe_api`) — nessun download/estrazione
+  audio, solo embed standard. Parte muto e in loop (i browser bloccano
+  l'autoplay con audio) e si sblocca al primo click/tocco/tasto
+  sulla pagina, a volume molto basso (`8/100`). Div contenitore
+  `#audio-sottofondo`, nascosto via CSS inline (1×1px, `opacity:0`).
 
 ---
 
@@ -162,8 +170,9 @@ luoghi, "The Mist" stesso) invariati in italiano e in inglese.
 
 ## 8. Privacy e legale (resta valido)
 
-- Nessun CDN di terze parti che traccia, a parte lo script di Netlify
-  Identity per il login (funzionale, non di tracciamento).
+- Nessun CDN di terze parti che traccia, a parte l'embed YouTube per
+  l'audio di sottofondo (§4) — usa `youtube-nocookie.com` apposta per
+  ridurre il tracciamento, ma resta comunque una connessione a Google.
 - Nessun dato personale in URL.
 - Non inventare mai dati di contatto (email, telefono) come segnaposto —
   è già successo una volta, evitarlo. Se manca un dato reale, ometterlo o
