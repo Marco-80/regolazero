@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>RegolaZero — In arrivo</title>
+  <style>
+    /* Sfondo scuro fisso: il logo è bianco su trasparente. */
+    body {
+      margin: 0;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      background: #121212;
+      color: #cfcfcf;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      padding: 2rem 1.25rem;
+      box-sizing: border-box;
+    }
+    .logo { width: min(90vw, 32rem); height: auto; }
+    p { margin-top: 2rem; font-size: 1.1rem; color: #9c9c9c; }
+
+    /* Pulsante triangolo+lucchetto, angolo in alto a destra */
+    .rz-corner-badge {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 7.5rem;
+      height: 7.5rem;
+      padding: 0;
+      border: 0;
+      cursor: pointer;
+      background: #111;
+      clip-path: polygon(0 0, 100% 0, 100% 100%);
+      display: block;
+      z-index: 20;
+    }
+    .rz-corner-badge::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      margin: 0.16rem -0.16rem 0 0.16rem;
+      background: #f2f0eb;
+      clip-path: polygon(0 0, 100% 0, 100% 100%);
+    }
+    .rz-corner-badge img {
+      position: absolute;
+      top: 0.75rem;
+      right: 1rem;
+      width: 2rem;
+      height: auto;
+      z-index: 1;
+    }
+    .rz-corner-badge:hover,
+    .rz-corner-badge:focus-visible { filter: brightness(1.08); }
+    .rz-corner-badge:focus-visible { outline: 2px solid #f2f0eb; outline-offset: -4px; }
+
+    .rz-login-msg {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 26rem;
+      margin: 0;
+      padding: 0.75rem 1.1rem;
+      background: #1c1c1c;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #d8d8d8;
+      font-size: 0.9rem;
+      text-align: center;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <img class="logo" src="/images/site/logo-regolazero.png" alt="RegolaZero" width="1600" height="656" />
+    <p>Il sito è in costruzione. Torna presto.</p>
+  </div>
+
+  <button type="button" id="rz-login-triangle" aria-label="Accedi o registrati" title="Accedi o registrati" class="rz-corner-badge">
+    <img src="/images/site/lucchetto.png" alt="" width="149" height="220" />
+  </button>
+  <p id="rz-login-msg" class="rz-login-msg" role="status" aria-live="polite" hidden></p>
+
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script>
+    (function () {
+      // Login vero via Netlify Identity, invariato da prima del reset.
+      // Registrazione aperta; serve un ruolo (preview/editor) assegnato a
+      // mano dall'admin per vedere il sito quando sarà pronto.
+      var NETLIFY_IDENTITY_URL = 'https://regolazero.netlify.app/.netlify/identity';
+      var RUOLI_CHE_SBLOCCANO = ['preview', 'editor'];
+
+      var btn = document.getElementById('rz-login-triangle');
+      var msg = document.getElementById('rz-login-msg');
+
+      function mostraMsg(testo) {
+        msg.textContent = testo;
+        msg.hidden = false;
+      }
+
+      function haRuoloValido(user) {
+        var ruoli = (user && user.app_metadata && user.app_metadata.roles) || [];
+        return ruoli.some(function (r) { return RUOLI_CHE_SBLOCCANO.indexOf(r) !== -1; });
+      }
+
+      function gestisciUtente(user) {
+        if (!user) return;
+        if (haRuoloValido(user)) {
+          mostraMsg('Accesso confermato. (Il resto del sito è ancora da ricostruire.)');
+        } else {
+          mostraMsg('Registrazione ricevuta! Il sito è ancora privato: ti avviseremo quando sarà visibile.');
+        }
+      }
+
+      function avvia() {
+        if (!window.netlifyIdentity) return;
+        // I listener PRIMA di init(): l'evento 'init' può scattare nello
+        // stesso tick della chiamata.
+        window.netlifyIdentity.on('init', gestisciUtente);
+        window.netlifyIdentity.on('login', gestisciUtente);
+        window.netlifyIdentity.on('signup', function () {
+          mostraMsg('Controlla la posta per confermare la registrazione.');
+        });
+        window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
+
+        btn.addEventListener('click', function () {
+          window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL }); // riafferma, v. note storiche
+          window.netlifyIdentity.open('login');
+        });
+      }
+
+      if (document.readyState === 'complete') avvia();
+      else window.addEventListener('load', avvia);
+    })();
+  </script>
+</body>
+</html>
