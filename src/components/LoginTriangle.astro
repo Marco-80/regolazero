@@ -1,14 +1,18 @@
 ---
-// Pulsante "triangolo con lucchetto" in alto a destra, per il login vero
-// (Netlify Identity, invito via email — CLAUDE.md §15).
-import { BYPASS_KEY, NETLIFY_IDENTITY_URL } from '../config/site';
+// Pulsante "triangolo con lucchetto" in alto a destra: login/registrazione
+// vera via Netlify Identity (CLAUDE.md §15). Registrazione APERTA a
+// chiunque; vedere il sito richiede un ruolo (preview/editor) assegnato a
+// mano dall'admin dopo la registrazione.
+import { BYPASS_KEY, NETLIFY_IDENTITY_URL, RUOLI_CHE_SBLOCCANO } from '../config/site';
 
 const configurato = Boolean(NETLIFY_IDENTITY_URL);
 ---
 
-<button type="button" id="rz-login-triangle" aria-label="Accedi" title="Accedi" class="rz-corner-badge">
+<button type="button" id="rz-login-triangle" aria-label="Accedi o registrati" title="Accedi o registrati" class="rz-corner-badge">
   <img src="/images/site/lucchetto.png" alt="" width="160" height="130" />
 </button>
+
+<p id="rz-login-msg" class="rz-login-msg" role="status" aria-live="polite" hidden></p>
 
 {
   configurato && (
@@ -16,16 +20,43 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
   )
 }
 
-<script define:vars={{ BYPASS_KEY, NETLIFY_IDENTITY_URL, configurato }}>
+<script define:vars={{ BYPASS_KEY, NETLIFY_IDENTITY_URL, RUOLI_CHE_SBLOCCANO, configurato }}>
   (function () {
     var btn = document.getElementById('rz-login-triangle');
+    var msg = document.getElementById('rz-login-msg');
     if (!btn) return;
 
-    function entra() {
+    function mostraMsg(testo) {
+      if (!msg) return;
+      msg.textContent = testo;
+      msg.hidden = false;
+    }
+
+    function sbloccaESiVaAllaHome() {
       try {
         localStorage.setItem(BYPASS_KEY, '1');
       } catch (e) {}
       window.location.href = '/';
+    }
+
+    function haRuoloValido(user) {
+      var ruoli = (user && user.app_metadata && user.app_metadata.roles) || [];
+      return ruoli.some(function (r) {
+        return RUOLI_CHE_SBLOCCANO.indexOf(r) !== -1;
+      });
+    }
+
+    // Chiamata dopo login/init/signup: decide se sbloccare o mostrare
+    // "in attesa di approvazione".
+    function gestisciUtente(user) {
+      if (!user) return;
+      if (haRuoloValido(user)) {
+        sbloccaESiVaAllaHome();
+      } else {
+        mostraMsg(
+          'Registrazione ricevuta! Il sito è ancora privato: ti avviseremo quando sarà visibile.',
+        );
+      }
     }
 
     if (!configurato) {
@@ -41,13 +72,18 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
       if (!window.netlifyIdentity) return;
       window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
 
-      window.netlifyIdentity.on('init', function (user) {
-        if (user) entra(); // sessione già valida (visita successiva)
+      // sessione già valida da una visita precedente
+      window.netlifyIdentity.on('init', gestisciUtente);
+      // login riuscito nel modale
+      window.netlifyIdentity.on('login', gestisciUtente);
+      // registrazione appena fatta (di solito richiede conferma email prima
+      // di essere "loggato": il widget lo gestisce da sé)
+      window.netlifyIdentity.on('signup', function () {
+        mostraMsg('Controlla la posta per confermare la registrazione.');
       });
-      window.netlifyIdentity.on('login', entra);
 
       btn.addEventListener('click', function () {
-        window.netlifyIdentity.open('login');
+        window.netlifyIdentity.open('login'); // il modale ha anche il tab "Sign up"
       });
     }
 
@@ -97,5 +133,21 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
   .rz-corner-badge:focus-visible {
     outline: 2px solid #f2f0eb;
     outline-offset: -4px;
+  }
+  .rz-login-msg {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 26rem;
+    margin: 0;
+    padding: 0.75rem 1.1rem;
+    background: #1c1c1c;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #d8d8d8;
+    font-size: 0.9rem;
+    text-align: center;
+    z-index: 20;
   }
 </style>

@@ -29,3 +29,13 @@ export const BYPASS_KEY = 'rz-bypass-coming-soon';
  * parlare).
  */
 export const NETLIFY_IDENTITY_URL = '';
+
+/**
+ * Registrazione APERTA a chiunque (Netlify Identity → Registration → Open),
+ * ma vedere il sito mentre è in coming-soon richiede uno di questi ruoli,
+ * assegnato A MANO dall'admin per ogni utente dal pannello Netlify Identity
+ * (Identity → utente → Roles). Chi si registra senza ruolo resta "in lista
+ * d'attesa" — è comunque nell'elenco utenti di Identity, che funge da
+ * mailing list. Vedi CLAUDE.md §15.
+ */
+export const RUOLI_CHE_SBLOCCANO = ['preview', 'editor'];

@@ -863,52 +863,71 @@ server, quindi **gate lato client**, non una vera protezione):
 
 ---
 
-## 15. Login vero (pulsante lucchetto) — Netlify Identity, solo su invito
+## 15. Login vero (pulsante lucchetto) — Netlify Identity, registrazione aperta + ruoli
 
-Deciso dall'utente: oltre al link di bypass (§14, resta attivo per test
-rapidi), un **login vero** con username/password + un flusso di
-"registrazione" **solo su invito** (non auto-iscrizione libera), attivabile
-da un pulsante a triangolo con lucchetto in basso a sinistra nella pagina
-`/coming-soon/`.
+Deciso dall'utente (rivisto rispetto alla prima versione "solo su invito"):
+oltre al link di bypass (§14, resta attivo per test rapidi), un pulsante a
+triangolo con lucchetto in alto a destra su `/coming-soon/` apre un vero
+login/registrazione. Schema attuale:
+
+- **Registrazione aperta a chiunque** (non più solo su invito).
+- Chi si registra **entra nell'elenco utenti di Netlify Identity** — che
+  funge da mailing list "di fatto": Marco lo consulta/esporta dal pannello
+  Netlify, non serve costruire altro per questo (semplifica/assorbe parte di
+  quanto si discuteva in §9.8 per una mailing list generale del sito — resta
+  distinta la mailing list *specifica di The Mist* su
+  `/the-mist/mailing-list/`, ancora posticipata).
+- **Registrarsi da solo NON dà accesso al sito.** Chi si registra senza
+  ruolo vede un messaggio "registrazione ricevuta, in attesa" e resta sul
+  coming-soon.
+- **Marco assegna a mano un ruolo** a chi vuole far entrare, dal pannello
+  Netlify (Identity → clic sull'utente → Roles). Due ruoli previsti
+  (`RUOLI_CHE_SBLOCCANO` in `src/config/site.ts`):
+  - **`preview`** — sblocca solo la visione del sito mentre è in coming-soon.
+  - **`editor`** — pensato per chi in futuro scrive anche dal pannello
+    `/admin/` (quando si collegherà lo stesso Identity a Decap via Git
+    Gateway, §9.3 — non ancora fatto: per ora `editor` sblocca la
+    visione esattamente come `preview`, non dà ancora accesso CMS).
+  Qualsiasi altro nome di ruolo **non** sblocca nulla.
 
 **Perché Netlify Identity e non un backend custom**: dà username/password,
-inviti via email, reset password e "accetta invito → imposta password" già
-pronti, gratis, senza scrivere un server. **Non serve spostare l'hosting**:
-il sito resta su GitHub Pages, si usa un progetto Netlify **solo** come
-provider di identità (stesso servizio già proposto in §9.3 per il login
-Google di Decap — le due cose sono indipendenti per ora, si può collegare lo
-stesso Identity a entrambe più avanti, non ancora fatto).
+registrazione con conferma email, ruoli assegnabili a mano, reset password —
+già pronti, gratis, senza scrivere un server. **Non serve spostare
+l'hosting**: il sito resta su GitHub Pages, il progetto Netlify serve
+**solo** come provider di identità.
 
 ### Setup (da fare nel pannello Netlify — non posso farlo io: serve un account)
 
-1. Su [app.netlify.com](https://app.netlify.com), crea un sito qualsiasi
-   ("Add new site" → **Deploy manually** → trascina anche solo una cartella
-   con un `index.html` vuoto: serve solo per avere un progetto Netlify, il
-   contenuto non conta, non sostituisce GitHub Pages).
-2. Site settings → **Identity** → **Enable Identity**.
-3. Identity → **Registration** → **Invite only**.
-4. Identity → **Invite users** → invita gli indirizzi email di chi deve
-   avere accesso in anteprima.
-5. Identity → Settings → **Emails**: imposta l'URL di conferma/invito su
-   `https://regolazero.it/coming-soon/` (**deve** essere questa pagina
-   esatta — il link d'invito porta un token nell'URL che il pulsante
-   lucchetto deve poter leggere; se il gate reindirizzasse altrove prima, il
-   token si perderebbe).
-6. Copia l'URL del sito Netlify creato al punto 1 (tipo
-   `https://nome-a-caso.netlify.app`) e dammelo: lo metto in
-   `NETLIFY_IDENTITY_URL` (`src/config/site.ts`, formato
-   `https://nome-a-caso.netlify.app/.netlify/identity`) e ridistribuisco.
+1. Progetto Netlify già creato dall'utente: **regolazero.netlify.app**
+   (Project ID `83295086-8ed3-4cc5-b43b-23bd362780c3`), via Netlify Drop.
+2. **Identity** (voce nel menu laterale, sotto "Forms") → **Enable Identity**
+   se non già fatto.
+3. Identity → **Settings** → **Registration** → **Open** (non "Invite only").
+4. Identity → Settings → **Emails**: campo URL di conferma → deve essere
+   **`https://regolazero.it/coming-soon/`** (chi si registra riceve
+   un'email di conferma con un link che porta lì; se il gate rimandasse
+   altrove prima che il widget legga il token, la conferma si perderebbe).
+5. Dopo che qualcuno si registra: Identity → lista utenti → clic sull'utente
+   → aggiungi il ruolo `preview` (o `editor`) per sbloccargli il sito.
+6. URL del progetto da collegare nel codice: **`https://regolazero.netlify.app`**
+   → lo metto in `NETLIFY_IDENTITY_URL` (`src/config/site.ts`, formato
+   completo `https://regolazero.netlify.app/.netlify/identity`) appena
+   confermi che Identity è abilitato e in modalità Open.
 
 ### Come funziona lato codice
 
-- `src/components/LoginTriangle.astro`: bottone SVG (triangolo + lucchetto),
-  carica `netlify-identity-widget.js` solo se `NETLIFY_IDENTITY_URL` è
-  configurato, altrimenti il click mostra un avviso "non ancora
-  configurato" (nessun endpoint finto).
-- Al login riuscito (`netlifyIdentity.on('login', …)`) o se l'utente ha già
-  una sessione valida al caricamento (`on('init', user)`), imposta lo stesso
-  `localStorage[BYPASS_KEY]` usato dal link di bypass (§14) e porta alla
-  home. I due meccanismi di sblocco (link segreto e login Identity)
-  convivono, stessa chiave.
+- `src/components/LoginTriangle.astro`: pulsante a "bandiera" d'angolo (in
+  alto a destra, come da mockup fornito dall'utente) col PNG del lucchetto
+  (`public/images/site/lucchetto.png`, ottimizzato da un file fornito
+  dall'utente). Carica `netlify-identity-widget.js` solo se
+  `NETLIFY_IDENTITY_URL` è configurato, altrimenti il click mostra un
+  avviso "non ancora configurato" (nessun endpoint finto).
+- Al login/registrazione riuscita (`on('login')`) o se l'utente ha già una
+  sessione valida al caricamento (`on('init', user)`), controlla
+  `user.app_metadata.roles`: se contiene `preview` o `editor` (v.
+  `RUOLI_CHE_SBLOCCANO`), imposta lo stesso `localStorage[BYPASS_KEY]`
+  usato dal link di bypass (§14) e porta alla home. Altrimenti mostra il
+  messaggio di attesa e non sblocca nulla.
+- `on('signup')`: messaggio "controlla la posta per confermare".
 - Il pulsante sta per ora solo su `/coming-soon/` (è l'unica pagina che i
   visitatori non autenticati vedono comunque).
