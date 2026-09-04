@@ -1,0 +1,96 @@
+---
+// Gestione account nell'header del sito madre: login/logout + accesso al
+// pannello nativo di Netlify Identity (email/password). CLAUDE.md §15/§16.
+import { BYPASS_KEY, NETLIFY_IDENTITY_URL } from '../../config/site';
+
+const configurato = Boolean(NETLIFY_IDENTITY_URL);
+---
+
+{
+  configurato && (
+    <div class="rz-account" id="rz-account" data-pagefind-ignore>
+      <a href="#" id="rz-account-login" hidden>Accedi</a>
+      <span id="rz-account-logged" hidden>
+        <a href="#" id="rz-account-email" title="Gestisci account"></a>
+        · <a href="#" id="rz-account-logout">Esci</a>
+      </span>
+    </div>
+  )
+}
+
+{
+  configurato && (
+    <script is:inline src="https://identity.netlify.com/v1/netlify-identity-widget.js" />
+  )
+}
+
+<script define:vars={{ BYPASS_KEY, NETLIFY_IDENTITY_URL, configurato }}>
+  (function () {
+    if (!configurato) return;
+    var wrap = document.getElementById('rz-account');
+    if (!wrap) return;
+    var loginA = document.getElementById('rz-account-login');
+    var loggedS = document.getElementById('rz-account-logged');
+    var emailA = document.getElementById('rz-account-email');
+    var logoutA = document.getElementById('rz-account-logout');
+
+    function mostra(user) {
+      if (user) {
+        loginA.hidden = true;
+        loggedS.hidden = false;
+        emailA.textContent = user.email || 'account';
+      } else {
+        loginA.hidden = false;
+        loggedS.hidden = true;
+      }
+    }
+
+    function avvia() {
+      if (!window.netlifyIdentity) return;
+      window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
+
+      window.netlifyIdentity.on('init', mostra);
+      window.netlifyIdentity.on('login', mostra);
+      window.netlifyIdentity.on('logout', function () { mostra(null); });
+
+      loginA.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL }); // v. LoginTriangle
+        window.netlifyIdentity.open('login');
+      });
+      emailA.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.netlifyIdentity.open(); // pannello account: cambio email/password
+      });
+      logoutA.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.netlifyIdentity.logout();
+        try {
+          localStorage.removeItem(BYPASS_KEY);
+        } catch (err) {}
+        window.location.href = '/coming-soon/';
+      });
+
+      var current = window.netlifyIdentity.currentUser();
+      if (current) mostra(current);
+    }
+
+    if (document.readyState === 'complete') avvia();
+    else window.addEventListener('load', avvia);
+  })();
+</script>
+
+<style>
+  .rz-account {
+    font-size: 0.85rem;
+    color: var(--rz-muted);
+    white-space: nowrap;
+  }
+  .rz-account a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .rz-account a:hover {
+    color: var(--rz-text);
+  }
+</style>

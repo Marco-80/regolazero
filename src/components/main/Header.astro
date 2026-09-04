@@ -1,4 +1,6 @@
 ---
+import AccountWidget from './AccountWidget.astro';
+
 const { pathname } = Astro.url;
 const isActive = (href: string) =>
   href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -31,5 +33,6 @@ const links = [
         ))
       }
     </nav>
+    <AccountWidget />
   </div>
 </header>
