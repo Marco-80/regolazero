@@ -896,31 +896,39 @@ già pronti, gratis, senza scrivere un server. **Non serve spostare
 l'hosting**: il sito resta su GitHub Pages, il progetto Netlify serve
 **solo** come provider di identità.
 
-### Setup (fatto/da fare nel pannello Netlify)
+### Setup — ✅ FUNZIONANTE end-to-end (verificato in produzione)
 
 1. ✅ Progetto Netlify creato dall'utente: **regolazero.netlify.app**
    (Project ID `83295086-8ed3-4cc5-b43b-23bd362780c3`), via Netlify Drop.
-2. ✅ Identity abilitato.
-3. ⬜ Identity → **Registration** → **Open** (non "Invite only") — DA FARE.
-4. **Niente campo per l'URL di conferma senza piano Pro** (nella UI attuale
-   sta sotto "Emails", a pagamento). Soluzione: `netlify-drop/index.html`
-   in questo repo è una paginetta "relay" — carica il widget Identity
-   puntato sullo stesso `APIUrl`, consuma il token di conferma/invito, poi
-   reindirizza a `https://regolazero.it/coming-soon/`. **Va caricata al
-   posto del placeholder vuoto su Netlify Drop** (trascina di nuovo il
-   file su [app.netlify.com/drop](https://app.netlify.com/drop) sullo
-   stesso progetto). Flusso risultante in 2 passi invece di 1: si conferma
-   sulla paginetta relay (rimbalzo automatico), poi si clicca di nuovo il
-   lucchetto su regolazero.it per il login vero.
+2. ✅ Identity abilitato, **progetto reso pubblico** ("Make public" — era
+   `Private` di default, bloccava con 401 anche le chiamate API di
+   Identity, non solo la navigazione).
+3. ✅ Registration risulta **Open** con **`autoconfirm: true`** (verificato
+   su `.../identity/settings`): chi si registra è **subito attivo**, senza
+   dover confermare via email. La paginetta relay
+   (`netlify-drop/index.html`) **non serve più** con questa impostazione —
+   resta nel repo come fallback nel caso l'autoconferma venga disattivata
+   in futuro.
+4. ✅ `NETLIFY_IDENTITY_URL` collegato (`src/config/site.ts`):
+   `https://regolazero.netlify.app/.netlify/identity`.
 5. Dopo che qualcuno si registra: Identity → lista utenti → clic sull'utente
    → aggiungi il ruolo `preview` (o `editor`) per sbloccargli il sito.
-6. ✅ `NETLIFY_IDENTITY_URL` collegato (`src/config/site.ts`):
-   `https://regolazero.netlify.app/.netlify/identity`.
 
-**Bug già corretto**: il tag `<script src="https://identity.netlify.com/…">`
-va marcato `is:inline` nei componenti `.astro` — senza, Astro lo elimina
-silenziosamente dalla build (trovato e sistemato in `LoginTriangle.astro`).
-Non si applica a `netlify-drop/index.html`, che è HTML puro, non Astro.
+**Due bug reali trovati e corretti durante il collaudo:**
+- Il tag `<script src="https://identity.netlify.com/…">` va marcato
+  `is:inline` nei componenti `.astro` — senza, Astro lo elimina
+  silenziosamente dalla build (non si applica a `netlify-drop/index.html`,
+  che è HTML puro).
+- Il widget fa un proprio auto-init "silenzioso" sul dominio della pagina
+  corrente al caricamento, che può sovrascrivere l'`APIUrl` passato al
+  nostro `init()` esplicito a seconda del timing — causava chiamate a
+  `regolazero.it/.netlify/identity/settings` (404) invece che al progetto
+  Netlify giusto. Fix: attendere `window.load` (dopo l'auto-init del
+  widget) e riaffermare `APIUrl` subito prima di `open('login')`.
+
+Modale di login/registrazione verificato aperto correttamente in
+produzione, con anche Google e GitHub come provider extra (default di
+Netlify Identity, non configurati esplicitamente).
 
 ### Come funziona lato codice
 
