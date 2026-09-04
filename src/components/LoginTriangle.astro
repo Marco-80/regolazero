@@ -70,8 +70,10 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
 
     function avvia() {
       if (!window.netlifyIdentity) return;
-      window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
 
+      // Registrare i listener PRIMA di init(): l'evento 'init' può scattare
+      // nello stesso tick della chiamata, e se ci si registra dopo lo si
+      // perde (chi torna già loggato non verrebbe riconosciuto).
       // sessione già valida da una visita precedente
       window.netlifyIdentity.on('init', gestisciUtente);
       // login riuscito nel modale
@@ -80,6 +82,8 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
       window.netlifyIdentity.on('signup', function () {
         mostraMsg('Controlla la posta per confermare la registrazione.');
       });
+
+      window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
 
       btn.addEventListener('click', function () {
         // Il widget fa un proprio auto-init "silenzioso" (stesso dominio

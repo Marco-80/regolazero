@@ -47,11 +47,15 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
 
     function avvia() {
       if (!window.netlifyIdentity) return;
-      window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
 
+      // I listener vanno registrati PRIMA di init(): l'evento 'init' può
+      // scattare nello stesso tick della chiamata, e se ci si registra
+      // dopo lo si perde (rimane tutto "hidden").
       window.netlifyIdentity.on('init', mostra);
       window.netlifyIdentity.on('login', mostra);
       window.netlifyIdentity.on('logout', function () { mostra(null); });
+
+      window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
 
       loginA.addEventListener('click', function (e) {
         e.preventDefault();
