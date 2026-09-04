@@ -579,17 +579,18 @@ del Worker sì (è pubblico per natura), via `PUBLIC_MAILINGLIST_ENDPOINT`.
 2. **Font del microsito.** Candidati display: *Another Shabby*, *Kust*,
    *AC Pathetich*, *Rushk*, *Avalon Caps*. Serve la scelta finale + licenza
    d'uso web + file `woff2` (self-hosting, niente Google Fonts CDN per privacy).
-3. **Login di Decap CMS — RISOLTO: Netlify Identity + Git Gateway (stesso
-   account del sito, deciso dall'utente).** Niente servizio separato: chi ha
-   il ruolo `editor` su Netlify Identity (§15) può sia vedere il sito in
-   coming-soon sia scrivere dal pannello `/admin/`. `public/admin/config.yml`
-   già configurato con `backend: git-gateway`. **Resta da fare nel pannello
-   Netlify**: Identity → Services → **Git Gateway** → Enable, e nel campo
-   "Roles" di quella stessa sezione scrivere `editor` (così solo chi ha
-   quel ruolo può salvare contenuti — chi ha solo `preview` continua a vedere
-   il sito ma non può scrivere). Dettagli setup in §16.
-   (Scartata l'opzione Cloudflare Worker con login GitHub separato — l'utente
-   preferisce riusare l'unico sistema di account già in piedi.)
+3. **Login di Decap CMS — ANCORA APERTO. Niente Netlify.** Si era tentato
+   Git Gateway (stesso Netlify Identity del sito) ma l'utente ha
+   **esplicitamente rifiutato Netlify per il CMS** — tentativo annullato,
+   `public/admin/config.yml` è tornato a `backend: github` (senza proxy
+   OAuth configurato, quindi il login online non funziona ancora).
+   L'unica strada rimasta per un login GitHub online è un piccolo proxy
+   OAuth su **Cloudflare Worker** (mai realizzato finora, solo descritto) —
+   **non procedere senza riconferma esplicita dell'utente**, dato che due
+   tentativi di indovinare la soluzione preferita sono già andati storti.
+   Fino a nuova decisione: editing **solo in locale**
+   (`npm run dev` + `npm run cms` → `http://localhost:4321/admin/`), che
+   funziona già oggi senza alcun servizio esterno.
 4. **Struttura `/materiali/`.** Route dinamica `[sistema].astro` da subito o
    pagina indice singola finché c'è un solo sistema? Default proposto: indice
    singolo ora, dinamica quando arriva il secondo sistema.
@@ -940,40 +941,27 @@ Netlify Identity, non configurati esplicitamente).
 
 ---
 
-## 16. Backend CMS — Decap via Git Gateway (stesso login del sito)
+## 16. Backend CMS — ANNULLATO il tentativo con Netlify, ancora da decidere
 
-Deciso dall'utente: **niente sistema separato per il backend**. Chi ha già
-un account Netlify Identity (§15) con ruolo `editor` usa le stesse
-credenziali per accedere a `/admin/` e scrivere contenuti — non un login
-GitHub a parte, non un Worker Cloudflare dedicato.
+**Cronologia (per non ripetere l'errore):** si era configurato Decap con
+`backend: git-gateway` per riusare lo stesso Netlify Identity del sito
+(§15), interpretando così un messaggio ambiguo dell'utente. L'utente ha poi
+chiarito con fermezza di **non volere Netlify per il CMS in nessuna forma**.
+`public/admin/config.yml` è stato riportato a `backend: github` (§9.3).
 
-### Setup (da fare nel pannello Netlify — regolazero.netlify.app)
+**Stato attuale**: nessun login online funzionante per `/admin/`. Editing
+possibile **solo in locale**:
+```bash
+npm run dev
+npm run cms
+```
+poi `http://localhost:4321/admin/` — funziona subito, zero servizi esterni,
+zero costi, zero pagine di configurazione altrui da compilare.
 
-1. **Identity → Services → Git Gateway → Enable Git Gateway.**
-   Se chiede di collegare un provider Git, scegli GitHub e autorizza
-   sull'account/organizzazione che possiede `Marco-80/regolazero` (serve un
-   token/OAuth GitHub una tantum per autorizzare Netlify a scrivere sul repo
-   per conto degli utenti Identity — è un passaggio del pannello Netlify,
-   non un servizio nuovo da gestire).
-2. Nella stessa schermata di Git Gateway, campo **"Roles"**: scrivi
-   `editor`. Così solo chi ha quel ruolo (assegnato in Identity → Users →
-   utente → Roles, v. §15) può salvare modifiche dal pannello; chi ha solo
-   `preview` continua a vedere il sito ma il backend gli resterà
-   inaccessibile (o in sola lettura, a seconda di come Decap gestisce
-   l'assenza del ruolo — da verificare al primo test).
-3. Nessuna modifica di codice oltre a quella già fatta: `public/admin/
-   config.yml` ha già `backend: git-gateway` con `identity_url` e
-   `gateway_url` puntati a `regolazero.netlify.app`.
-
-### Verifica
-
-Vai su `https://regolazero.it/admin/`: dovrebbe apparire la schermata di
-login di Decap con il widget Netlify Identity incorporato. Login con un
-utente che ha ruolo `editor` → si entra nel pannello, le collection di §6.1
-sono editabili, ogni salvataggio è un commit (o una PR, con
-`publish_mode: editorial_workflow` attivo) su `Marco-80/regolazero`.
-
-Se qualcosa non torna (schermata bianca, errore di connessione a Identity,
-ecc.), è quasi certamente un altro problema di configurazione lato Netlify
-dello stesso tipo di quelli già risolti in §15 (progetto privato, timing
-del widget…) — controllare prima lì.
+**Prossimo passo, da NON avviare senza conferma esplicita**: l'unica opzione
+rimasta sul tavolo per un login online (§9.3) è un proxy OAuth GitHub via
+Cloudflare Worker — stesso pattern già usato per lo stub della mailing list
+(§7.5), un servizio indipendente da Netlify. Prima di costruirlo, chiedere
+di nuovo all'utente conferma esplicita (non dedurla da una frase ambigua):
+vuole procedere con quello, o preferisce restare sull'editing locale più a
+lungo?
