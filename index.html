@@ -30,7 +30,18 @@
       padding: 2rem 1.25rem;
       box-sizing: border-box;
     }
-    .logo { width: min(90vw, 32rem); height: auto; }
+    .logo {
+      width: min(90vw, 32rem);
+      height: auto;
+      animation: respiro 10s ease-in-out infinite;
+    }
+    @keyframes respiro {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(0.7); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .logo { animation: none; }
+    }
     p { margin-top: 2rem; font-size: 1.1rem; color: #9c9c9c; }
   </style>
 </head>
