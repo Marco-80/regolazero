@@ -896,23 +896,31 @@ già pronti, gratis, senza scrivere un server. **Non serve spostare
 l'hosting**: il sito resta su GitHub Pages, il progetto Netlify serve
 **solo** come provider di identità.
 
-### Setup (da fare nel pannello Netlify — non posso farlo io: serve un account)
+### Setup (fatto/da fare nel pannello Netlify)
 
-1. Progetto Netlify già creato dall'utente: **regolazero.netlify.app**
+1. ✅ Progetto Netlify creato dall'utente: **regolazero.netlify.app**
    (Project ID `83295086-8ed3-4cc5-b43b-23bd362780c3`), via Netlify Drop.
-2. **Identity** (voce nel menu laterale, sotto "Forms") → **Enable Identity**
-   se non già fatto.
-3. Identity → **Settings** → **Registration** → **Open** (non "Invite only").
-4. Identity → Settings → **Emails**: campo URL di conferma → deve essere
-   **`https://regolazero.it/coming-soon/`** (chi si registra riceve
-   un'email di conferma con un link che porta lì; se il gate rimandasse
-   altrove prima che il widget legga il token, la conferma si perderebbe).
+2. ✅ Identity abilitato.
+3. ⬜ Identity → **Registration** → **Open** (non "Invite only") — DA FARE.
+4. **Niente campo per l'URL di conferma senza piano Pro** (nella UI attuale
+   sta sotto "Emails", a pagamento). Soluzione: `netlify-drop/index.html`
+   in questo repo è una paginetta "relay" — carica il widget Identity
+   puntato sullo stesso `APIUrl`, consuma il token di conferma/invito, poi
+   reindirizza a `https://regolazero.it/coming-soon/`. **Va caricata al
+   posto del placeholder vuoto su Netlify Drop** (trascina di nuovo il
+   file su [app.netlify.com/drop](https://app.netlify.com/drop) sullo
+   stesso progetto). Flusso risultante in 2 passi invece di 1: si conferma
+   sulla paginetta relay (rimbalzo automatico), poi si clicca di nuovo il
+   lucchetto su regolazero.it per il login vero.
 5. Dopo che qualcuno si registra: Identity → lista utenti → clic sull'utente
    → aggiungi il ruolo `preview` (o `editor`) per sbloccargli il sito.
-6. URL del progetto da collegare nel codice: **`https://regolazero.netlify.app`**
-   → lo metto in `NETLIFY_IDENTITY_URL` (`src/config/site.ts`, formato
-   completo `https://regolazero.netlify.app/.netlify/identity`) appena
-   confermi che Identity è abilitato e in modalità Open.
+6. ✅ `NETLIFY_IDENTITY_URL` collegato (`src/config/site.ts`):
+   `https://regolazero.netlify.app/.netlify/identity`.
+
+**Bug già corretto**: il tag `<script src="https://identity.netlify.com/…">`
+va marcato `is:inline` nei componenti `.astro` — senza, Astro lo elimina
+silenziosamente dalla build (trovato e sistemato in `LoginTriangle.astro`).
+Non si applica a `netlify-drop/index.html`, che è HTML puro, non Astro.
 
 ### Come funziona lato codice
 
