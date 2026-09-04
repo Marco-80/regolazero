@@ -1,0 +1,20 @@
+---
+import { getCollection } from 'astro:content';
+import TheMistLayout from '../../../layouts/TheMistLayout.astro';
+import AvventureDetailBody from '../../../components/the-mist/pages/AvventureDetailBody.astro';
+import { vociPerLingua } from '../../../i18n/content';
+
+export async function getStaticPaths() {
+  const voci = vociPerLingua(await getCollection('avventure'), 'it');
+  return voci.map(({ base, entry }) => ({
+    params: { slug: base },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+---
+
+<TheMistLayout titolo={entry.data.titolo} lang="it">
+  <AvventureDetailBody lang="it" entry={entry} />
+</TheMistLayout>

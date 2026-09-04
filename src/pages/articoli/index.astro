@@ -1,0 +1,27 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import CardArticolo from '../../components/main/CardArticolo.astro';
+import { articoliPubblicati } from '../../lib/articoli';
+
+const articoli = await articoliPubblicati();
+const tipi = [...new Set(articoli.map((a) => a.data.tipo))].sort();
+---
+
+<MainLayout titolo="Articoli" descrizione="Novità, diari di sviluppo e approfondimenti di RegolaZero.">
+  <h1>Articoli</h1>
+  {
+    tipi.length > 0 && (
+      <p style="color: var(--rz-muted);">Tipi: {tipi.join(' · ')}</p>
+    )
+  }
+
+  {
+    articoli.length === 0 ? (
+      <p><em>Presto in arrivo.</em></p>
+    ) : (
+      <div class="rz-grid">
+        {articoli.map((a) => <CardArticolo articolo={a} />)}
+      </div>
+    )
+  }
+</MainLayout>

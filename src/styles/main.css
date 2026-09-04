@@ -1,0 +1,112 @@
+/* ============================================================
+   Tema del SITO RegolaZero (publisher) — pulito, neutro, sobrio.
+   NON usare questo foglio nelle pagine /the-mist/.
+   ============================================================ */
+
+:root {
+  --rz-bg: #faf9f7;
+  --rz-surface: #ffffff;
+  --rz-text: #1b1b1c;
+  --rz-muted: #5c5c60;
+  --rz-border: #e3e1dc;
+  --rz-accent: #7a1f1f; /* provvisorio, tono publisher discreto */
+  --rz-accent-contrast: #ffffff;
+
+  --rz-max-width: 68rem;
+  --rz-radius: 6px;
+  --rz-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --rz-font-serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --rz-bg: #17171a;
+    --rz-surface: #1f1f23;
+    --rz-text: #ececec;
+    --rz-muted: #a2a2a8;
+    --rz-border: #33333a;
+    --rz-accent: #d9736f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--rz-bg);
+  color: var(--rz-text);
+  font-family: var(--rz-font-sans);
+  line-height: 1.6;
+}
+
+a { color: var(--rz-accent); }
+
+img { max-width: 100%; height: auto; }
+
+.rz-container {
+  max-width: var(--rz-max-width);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+.rz-site-header,
+.rz-site-footer {
+  border-bottom: 1px solid var(--rz-border);
+  background: var(--rz-surface);
+}
+.rz-site-footer {
+  border-bottom: 0;
+  border-top: 1px solid var(--rz-border);
+  color: var(--rz-muted);
+  font-size: 0.9rem;
+  margin-top: 4rem;
+}
+
+.rz-site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+}
+
+.rz-site-header__brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: var(--rz-text);
+}
+
+.rz-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  font-size: 0.95rem;
+}
+.rz-nav a { text-decoration: none; color: var(--rz-muted); }
+.rz-nav a[aria-current="page"] { color: var(--rz-text); font-weight: 600; }
+
+main { padding-block: 2.5rem; }
+
+h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
+
+.rz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1.25rem;
+}
+
+.rz-card {
+  background: var(--rz-surface);
+  border: 1px solid var(--rz-border);
+  border-radius: var(--rz-radius);
+  overflow: hidden;
+}
+.rz-card__body { padding: 1rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  a, button { transition: color 0.15s ease, background-color 0.15s ease; }
+}

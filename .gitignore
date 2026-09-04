@@ -1,0 +1,28 @@
+# build output
+dist/
+.output/
+
+# generated Astro types
+.astro/
+
+# deps
+node_modules/
+
+# env
+.env
+.env.production
+.env.local
+
+# cloudflare workers
+workers/**/wrangler.toml
+workers/**/.wrangler/
+workers/**/node_modules/
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# materiali sorgente grezzi del manuale (non versionare i binari)
+/sorgenti-manuale/
+*.zip

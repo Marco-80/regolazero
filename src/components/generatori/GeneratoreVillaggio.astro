@@ -1,0 +1,45 @@
+---
+// Generatore di villaggio del Braenmore (Fase 4 — versione base funzionante).
+// Le tabelle sono in src/data/generatori/the-mist-villaggio.json.
+import tabelle from '../../data/generatori/the-mist-villaggio.json';
+const j = JSON.stringify(tabelle);
+---
+
+<div class="gen" data-tabelle={j}>
+  <button type="button" class="gen__roll">Genera un villaggio</button>
+  <dl class="gen__out" hidden>
+    <dt>Nome</dt><dd data-k="nome">—</dd>
+    <dt>Disgrazia</dt><dd data-k="disgrazia">—</dd>
+    <dt>Cosa nasconde</dt><dd data-k="nasconde">—</dd>
+  </dl>
+</div>
+
+<script>
+  document.querySelectorAll('.gen').forEach((el) => {
+    const t = JSON.parse(el.getAttribute('data-tabelle') || '{}');
+    const out = el.querySelector('.gen__out');
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    el.querySelector('.gen__roll')?.addEventListener('click', () => {
+      for (const k of Object.keys(t)) {
+        const dd = el.querySelector(`[data-k="${k}"]`);
+        if (dd) dd.textContent = pick(t[k]);
+      }
+      out?.removeAttribute('hidden');
+    });
+  });
+</script>
+
+<style>
+  .gen__roll {
+    font: inherit;
+    padding: 0.5rem 1rem;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .gen__out { margin-top: 1.25rem; display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; }
+  .gen__out dt { font-weight: 700; opacity: 0.7; }
+  .gen__out dd { margin: 0; }
+</style>

@@ -1,0 +1,39 @@
+---
+import { getCollection } from 'astro:content';
+import { urlMist, t } from '../../../i18n/the-mist';
+import type { Lingua } from '../../../i18n/the-mist';
+import { vociPerLingua } from '../../../i18n/content';
+
+interface Props { lang: Lingua }
+const { lang } = Astro.props;
+const s = t[lang];
+
+const voci = vociPerLingua(await getCollection('avventure'), lang).sort((a, b) =>
+  a.entry.data.titolo.localeCompare(b.entry.data.titolo, lang),
+);
+---
+
+<h1>{s.avventure}</h1>
+{
+  voci.length === 0 ? (
+    <p><em>{s.nessunaAvventura}</em></p>
+  ) : (
+    <ul style="list-style: none; padding: 0;">
+      {voci.map(({ base, entry }) => {
+        const d = entry.data;
+        return (
+          <li style="margin-block: 1rem;">
+            <a href={urlMist(lang, `avventure/${base}/`)} style="font-size: 1.2rem;">
+              {d.titolo}
+            </a>
+            <div style="color: var(--tm-muted);">
+              {d.giocatori && <span>{d.giocatori} {s.giocatori}</span>}
+              {d.giocatori && d.durata && <span>{' · '}</span>}
+              {d.durata && <span>{d.durata}</span>}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  )
+}

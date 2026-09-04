@@ -1,0 +1,31 @@
+---
+import { render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import { urlMist, t } from '../../../i18n/the-mist';
+import type { Lingua } from '../../../i18n/the-mist';
+
+interface Props {
+  lang: Lingua;
+  entry: CollectionEntry<'bestiario'>;
+}
+const { lang, entry } = Astro.props;
+const s = t[lang];
+const { Content } = await render(entry);
+const d = entry.data;
+---
+
+<p><a href={urlMist(lang, 'bestiario/')}>{s.tornaBestiario}</a></p>
+
+<h1>{d.nome}</h1>
+
+<p style="color: var(--tm-muted);">
+  {d.pf !== undefined && <>PF {d.pf} · </>}
+  {d.morale !== undefined && <>Morale {d.morale} · </>}
+  {d.tratti.join(', ')}
+</p>
+
+{d.immagine && <img src={d.immagine} alt={d.nome} />}
+
+<Content />
+
+{d.fonte && <p style="color: var(--tm-muted); font-size: 0.85rem;">{s.fonte}: {d.fonte}</p>}

@@ -1,0 +1,31 @@
+---
+import { getCollection } from 'astro:content';
+import MainLayout from '../../../../layouts/MainLayout.astro';
+import CardArticolo from '../../../../components/main/CardArticolo.astro';
+import { isPubblicato } from '../../../../lib/articoli';
+
+export async function getStaticPaths() {
+  const giochi = await getCollection('giochi');
+  return giochi.map((g) => ({ params: { gioco: g.id }, props: { gioco: g } }));
+}
+
+const { gioco } = Astro.props;
+const articoli = (await getCollection('articoli', isPubblicato))
+  .filter((a) => a.data.gioco === gioco.id)
+  .sort((a, b) => b.data.data.getTime() - a.data.data.getTime());
+---
+
+<MainLayout titolo={`Articoli — ${gioco.data.titolo}`}>
+  <p><a href={`/giochi/${gioco.id}/`}>← {gioco.data.titolo}</a></p>
+  <h1>Articoli — {gioco.data.titolo}</h1>
+
+  {
+    articoli.length === 0 ? (
+      <p><em>Nessun articolo.</em></p>
+    ) : (
+      <div class="rz-grid">
+        {articoli.map((a) => <CardArticolo articolo={a} />)}
+      </div>
+    )
+  }
+</MainLayout>

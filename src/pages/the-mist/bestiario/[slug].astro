@@ -1,0 +1,20 @@
+---
+import { getCollection } from 'astro:content';
+import TheMistLayout from '../../../layouts/TheMistLayout.astro';
+import BestiarioDetailBody from '../../../components/the-mist/pages/BestiarioDetailBody.astro';
+import { vociPerLingua } from '../../../i18n/content';
+
+export async function getStaticPaths() {
+  const voci = vociPerLingua(await getCollection('bestiario'), 'it');
+  return voci.map(({ base, entry }) => ({
+    params: { slug: base },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+---
+
+<TheMistLayout titolo={entry.data.nome} lang="it">
+  <BestiarioDetailBody lang="it" entry={entry} />
+</TheMistLayout>

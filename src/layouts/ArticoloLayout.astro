@@ -1,0 +1,35 @@
+---
+import MainLayout from './MainLayout.astro';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  articolo: CollectionEntry<'articoli'>;
+}
+const { articolo } = Astro.props;
+const d = articolo.data;
+const fmt = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' });
+---
+
+<MainLayout titolo={d.titolo} descrizione={d.estratto}>
+  <article>
+    <p style="color: var(--rz-muted); font-size: 0.85rem; margin-bottom: 0.3rem;">
+      {fmt.format(d.data)} · {d.tipo} · {d.autore}
+      {d.gioco && <> · <a href={`/giochi/${d.gioco}/`}>{d.gioco}</a></>}
+    </p>
+    <h1 style="margin-top: 0;">{d.titolo}</h1>
+
+    {d.copertina && <img src={d.copertina} alt="" style="border-radius: var(--rz-radius);" />}
+
+    <div class="rz-prose">
+      <slot />
+    </div>
+
+    {
+      d.tag.length > 0 && (
+        <p style="color: var(--rz-muted); font-size: 0.85rem; margin-top: 2rem;">
+          Tag: {d.tag.join(' · ')}
+        </p>
+      )
+    }
+  </article>
+</MainLayout>

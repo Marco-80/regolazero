@@ -1,0 +1,220 @@
+# Decap CMS — redazione RegolaZero (il "backend tipo WP"). Vedi CLAUDE.md §6.1.
+#
+# GitHub Pages non ha backend: il login GitHub richiede un proxy OAuth
+# (worker Cloudflare, §9.3). Finché non è pronto si edita in locale:
+#   npm run dev  +  npm run cms  ->  http://localhost:4321/admin/
+#
+backend:
+  name: github
+  repo: ORG/REPO # TODO: owner/nome-repo GitHub
+  branch: main
+  # base_url: https://oauth.regolazero.it   # TODO: URL del proxy OAuth
+  # auth_endpoint: auth
+
+local_backend: true
+
+# Workflow editoriale: Bozza / In revisione / Pronto (via PR). Per una gestione
+# più semplice, commentare questa riga e usare solo il campo "bozza".
+publish_mode: editorial_workflow
+
+media_folder: "public/images"
+public_folder: "/images"
+locale: "it"
+
+collections:
+  # ---------------------------------------------------------------- GIOCHI
+  - name: "giochi"
+    label: "Giochi"
+    label_singular: "Gioco"
+    identifier_field: "titolo"
+    folder: "src/content/giochi"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    summary: "{{titolo}} ({{anno}})"
+    fields:
+      - { name: "titolo", label: "Titolo", widget: "string" }
+      - { name: "sistema", label: "Sistema", widget: "string", hint: "es. Mörk Borg (compatibile)" }
+      - name: "stato"
+        label: "Stato"
+        widget: "select"
+        options: ["in-sviluppo", "pubblicato"]
+        default: "in-sviluppo"
+      - { name: "anno", label: "Anno", widget: "number", value_type: "int", min: 1970 }
+      - { name: "copertina", label: "Copertina", widget: "image", required: false }
+      - { name: "estratto", label: "Estratto (per la card)", widget: "text" }
+      - { name: "microsito", label: "URL microsito", widget: "string", required: false, hint: "es. /the-mist/" }
+      - name: "link_esterni"
+        label: "Link esterni"
+        widget: "list"
+        required: false
+        fields:
+          - { name: "label", label: "Etichetta", widget: "string" }
+          - { name: "url", label: "URL", widget: "string" }
+      - { name: "ordine", label: "Ordine nel catalogo", widget: "number", value_type: "int", default: 0 }
+      - { name: "body", label: "Descrizione del gioco", widget: "markdown", required: false }
+
+  # -------------------------------------------------------------- ARTICOLI
+  - name: "articoli"
+    label: "Articoli"
+    label_singular: "Articolo"
+    folder: "src/content/articoli"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    summary: "{{data | date('YYYY-MM-DD')}} · {{tipo}} · {{titolo}}"
+    fields:
+      - { name: "titolo", label: "Titolo", widget: "string" }
+      - name: "tipo"
+        label: "Tipo di articolo"
+        widget: "select"
+        default: "novità"
+        options:
+          - "novità"
+          - "recensione"
+          - "tips"
+          - "guida"
+          - "diario di sviluppo"
+          - "intervista"
+          - "dietro le quinte"
+          - "errata"
+      - name: "gioco"
+        label: "Collega a un gioco"
+        widget: "relation"
+        collection: "giochi"
+        search_fields: ["titolo"]
+        value_field: "{{slug}}"
+        display_fields: ["titolo"]
+        required: false
+        hint: "Lascia vuoto per un articolo generico RegolaZero."
+      - { name: "data", label: "Data", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false }
+      - { name: "aggiornato", label: "Aggiornato il", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: false }
+      - { name: "autore", label: "Autore", widget: "string" }
+      - { name: "tag", label: "Tag", widget: "list", required: false }
+      - { name: "estratto", label: "Estratto", widget: "text" }
+      - { name: "copertina", label: "Copertina", widget: "image", required: false }
+      - { name: "bozza", label: "Bozza (non pubblicare)", widget: "boolean", default: true }
+      - { name: "body", label: "Testo", widget: "markdown" }
+
+  # ------------------------------------------------------------- CONTENUTI
+  - name: "contenuti"
+    label: "Contenuti / risorse"
+    label_singular: "Contenuto"
+    folder: "src/content/contenuti"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { name: "titolo", label: "Titolo", widget: "string" }
+      - name: "gioco"
+        label: "Collega a un gioco"
+        widget: "relation"
+        collection: "giochi"
+        search_fields: ["titolo"]
+        value_field: "{{slug}}"
+        display_fields: ["titolo"]
+        required: false
+      - { name: "sistema", label: "Sistema (se non legato a un gioco)", widget: "string", required: false, hint: "es. Mörk Borg (compatibile) — per /materiali/" }
+      - name: "tipo"
+        label: "Tipo"
+        widget: "select"
+        options: ["scheda", "espansione", "hack", "download", "riferimento"]
+      - { name: "file", label: "File scaricabile", widget: "file", required: false, hint: "va in /public/downloads/…" }
+      - { name: "link_esterno", label: "Link esterno", widget: "string", required: false }
+      - { name: "estratto", label: "Estratto", widget: "text" }
+      - { name: "bozza", label: "Bozza", widget: "boolean", default: false }
+      - { name: "body", label: "Testo", widget: "markdown", required: false }
+
+  # ------------------------------------------------------------ GENERATORI
+  - name: "generatori"
+    label: "Generatori"
+    label_singular: "Generatore"
+    folder: "src/content/generatori"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { name: "titolo", label: "Titolo", widget: "string" }
+      - name: "gioco"
+        label: "Collega a un gioco"
+        widget: "relation"
+        collection: "giochi"
+        search_fields: ["titolo"]
+        value_field: "{{slug}}"
+        display_fields: ["titolo"]
+        required: false
+      - { name: "estratto", label: "Estratto", widget: "text" }
+      - { name: "componente", label: "Componente", widget: "string", hint: "nome file in src/components/generatori/ — lo sviluppa un dev" }
+      - { name: "dati", label: "JSON tabelle", widget: "string", required: false, hint: "path in src/data/generatori/" }
+      - { name: "body", label: "Note", widget: "markdown", required: false }
+
+  # ----------------------------------------------- THE MIST (bilingue IT/EN)
+  - name: "bestiario_it"
+    label: "The Mist · Bestiario (IT)"
+    label_singular: "Creatura (IT)"
+    folder: "src/content/the-mist/bestiario/it"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { name: "nome", label: "Nome", widget: "string" }
+      - { name: "pf", label: "PF", widget: "number", value_type: "int", required: false }
+      - { name: "morale", label: "Morale", widget: "number", value_type: "int", required: false }
+      - { name: "tratti", label: "Tratti", widget: "list", required: false }
+      - { name: "fonte", label: "Fonte (pagina manuale)", widget: "string", required: false }
+      - { name: "immagine", label: "Immagine", widget: "image", required: false }
+      - { name: "body", label: "Descrizione", widget: "markdown", required: false }
+
+  - name: "bestiario_en"
+    label: "The Mist · Bestiary (EN)"
+    label_singular: "Creature (EN)"
+    folder: "src/content/the-mist/bestiario/en"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { name: "nome", label: "Name", widget: "string" }
+      - { name: "pf", label: "HP", widget: "number", value_type: "int", required: false }
+      - { name: "morale", label: "Morale", widget: "number", value_type: "int", required: false }
+      - { name: "tratti", label: "Traits", widget: "list", required: false }
+      - { name: "fonte", label: "Source (manual page)", widget: "string", required: false }
+      - { name: "immagine", label: "Image", widget: "image", required: false }
+      - { name: "body", label: "Description", widget: "markdown", required: false }
+
+  - name: "avventure_it"
+    label: "The Mist · Avventure (IT)"
+    label_singular: "Avventura (IT)"
+    folder: "src/content/the-mist/avventure/it"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { name: "titolo", label: "Titolo", widget: "string" }
+      - { name: "autore", label: "Autore", widget: "string", default: "RegolaZero" }
+      - { name: "giocatori", label: "Giocatori", widget: "string", required: false }
+      - { name: "durata", label: "Durata", widget: "string", required: false }
+      - { name: "tags", label: "Tag", widget: "list", required: false }
+      - { name: "body", label: "Testo", widget: "markdown", required: false }
+
+  - name: "avventure_en"
+    label: "The Mist · Adventures (EN)"
+    label_singular: "Adventure (EN)"
+    folder: "src/content/the-mist/avventure/en"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { name: "titolo", label: "Title", widget: "string" }
+      - { name: "autore", label: "Author", widget: "string", default: "RegolaZero" }
+      - { name: "giocatori", label: "Players", widget: "string", required: false }
+      - { name: "durata", label: "Length", widget: "string", required: false }
+      - { name: "tags", label: "Tags", widget: "list", required: false }
+      - { name: "body", label: "Text", widget: "markdown", required: false }

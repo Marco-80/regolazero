@@ -1,0 +1,35 @@
+---
+import '../styles/main.css';
+import Header from '../components/main/Header.astro';
+import Footer from '../components/main/Footer.astro';
+
+interface Props {
+  titolo: string;
+  descrizione?: string;
+}
+
+const { titolo, descrizione = 'Publisher indie di giochi di ruolo.' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titolo} — RegolaZero</title>
+    <meta name="description" content={descrizione} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={`${titolo} — RegolaZero`} />
+    <meta property="og:description" content={descrizione} />
+    <meta property="og:type" content="website" />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <Header />
+    <main class="rz-container" data-pagefind-body>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

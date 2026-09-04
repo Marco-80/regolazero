@@ -1,0 +1,15 @@
+# Copia in wrangler.toml e compila. wrangler.toml NON va committato se contiene
+# valori sensibili (qui non ce ne sono: i secret si passano a parte).
+
+name = "regolazero-mailing-list"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+REPO = "ORG/REPO"            # es. regolazero/sito
+BRANCH = "main"
+FILE_PATH = "data/mailing-list.ndjson"
+ALLOW_ORIGIN = "https://regolazero.it"
+
+# Secret (NON qui dentro):
+#   wrangler secret put GITHUB_TOKEN

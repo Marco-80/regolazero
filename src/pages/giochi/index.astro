@@ -1,0 +1,24 @@
+---
+import { getCollection } from 'astro:content';
+import MainLayout from '../../layouts/MainLayout.astro';
+import CardGioco from '../../components/main/CardGioco.astro';
+
+const giochi = (await getCollection('giochi')).sort(
+  (a, b) => a.data.ordine - b.data.ordine || b.data.anno - a.data.anno,
+);
+---
+
+<MainLayout titolo="Giochi" descrizione="Il catalogo dei giochi RegolaZero.">
+  <h1>Giochi</h1>
+  <p>Le produzioni originali del team RegolaZero.</p>
+
+  {
+    giochi.length === 0 ? (
+      <p><em>Presto in arrivo.</em></p>
+    ) : (
+      <div class="rz-grid">
+        {giochi.map((g) => <CardGioco gioco={g} />)}
+      </div>
+    )
+  }
+</MainLayout>

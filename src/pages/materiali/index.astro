@@ -1,0 +1,49 @@
+---
+import { getCollection } from 'astro:content';
+import MainLayout from '../../layouts/MainLayout.astro';
+import { isPubblicatoContenuto } from '../../lib/articoli';
+
+// Materiali RegolaZero per sistemi di altri autori:
+// contenuti con `gioco` vuoto e `sistema` valorizzato.
+const materiali = (await getCollection('contenuti', isPubblicatoContenuto)).filter(
+  (c) => !c.data.gioco && c.data.sistema,
+);
+
+const perSistema = new Map<string, typeof materiali>();
+for (const m of materiali) {
+  const k = m.data.sistema as string;
+  perSistema.set(k, [...(perSistema.get(k) ?? []), m]);
+}
+---
+
+<MainLayout titolo="Materiali" descrizione="Materiali RegolaZero per i sistemi di altri autori.">
+  <h1>Materiali</h1>
+  <p>
+    Contenuti creati da RegolaZero per sistemi di altri autori. Ogni materiale è
+    <em>compatibile con</em> il sistema indicato e non è affiliato né approvato
+    dai rispettivi editori.
+  </p>
+
+  {
+    materiali.length === 0 ? (
+      <p><em>Presto in arrivo.</em></p>
+    ) : (
+      [...perSistema.entries()].map(([sistema, lista]) => (
+        <section>
+          <h2>{sistema}</h2>
+          <ul style="list-style: none; padding: 0;">
+            {lista.map((c) => (
+              <li class="rz-card" style="margin-block: 0.75rem;">
+                <div class="rz-card__body">
+                  <p style="color: var(--rz-muted); font-size: 0.8rem; margin: 0 0 0.3rem;">{c.data.tipo}</p>
+                  <h3 style="margin: 0 0 0.3rem;">{c.data.titolo}</h3>
+                  <p style="margin: 0;">{c.data.estratto}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    )
+  }
+</MainLayout>

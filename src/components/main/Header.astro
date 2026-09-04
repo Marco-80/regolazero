@@ -1,0 +1,27 @@
+---
+const { pathname } = Astro.url;
+const isActive = (href: string) =>
+  href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/giochi/', label: 'I nostri giochi' },
+  { href: '/materiali/', label: 'Materiali' },
+  { href: '/archivio/', label: 'Archivio' },
+];
+---
+
+<header class="rz-site-header" data-pagefind-ignore>
+  <div class="rz-container rz-site-header__inner">
+    <a class="rz-site-header__brand" href="/">RegolaZero</a>
+    <nav class="rz-nav" aria-label="Navigazione principale">
+      {
+        links.map((l) => (
+          <a href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>
+            {l.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>

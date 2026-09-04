@@ -1,0 +1,21 @@
+---
+import { getCollection, render } from 'astro:content';
+import ArticoloLayout from '../../layouts/ArticoloLayout.astro';
+import { isPubblicato } from '../../lib/articoli';
+
+// Canonici qui solo gli articoli SENZA gioco. Quelli con gioco stanno
+// sotto /giochi/<gioco>/articoli/<slug>/.
+export async function getStaticPaths() {
+  const articoli = await getCollection('articoli', isPubblicato);
+  return articoli
+    .filter((a) => !a.data.gioco)
+    .map((a) => ({ params: { slug: a.id }, props: { articolo: a } }));
+}
+
+const { articolo } = Astro.props;
+const { Content } = await render(articolo);
+---
+
+<ArticoloLayout articolo={articolo}>
+  <Content />
+</ArticoloLayout>

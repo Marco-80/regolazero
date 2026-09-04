@@ -1,0 +1,20 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { hrefArticolo } from '../../lib/articoli';
+interface Props { articolo: CollectionEntry<'articoli'> }
+const { articolo } = Astro.props;
+const d = articolo.data;
+const fmt = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' });
+---
+
+<article class="rz-card">
+  <a href={hrefArticolo(articolo)} style="text-decoration: none; color: inherit;">
+    <div class="rz-card__body">
+      <p style="color: var(--rz-muted); font-size: 0.8rem; margin: 0 0 0.4rem;">
+        {fmt.format(d.data)} · {d.tipo}{d.gioco ? ` · ${d.gioco}` : ''}
+      </p>
+      <h3 style="margin: 0 0 0.4rem;">{d.titolo}</h3>
+      <p style="margin: 0;">{d.estratto}</p>
+    </div>
+  </a>
+</article>

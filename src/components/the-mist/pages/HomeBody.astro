@@ -1,0 +1,49 @@
+---
+import { urlMist, t } from '../../../i18n/the-mist';
+import type { Lingua } from '../../../i18n/the-mist';
+
+interface Props { lang: Lingua }
+const { lang } = Astro.props;
+const s = t[lang];
+
+const sezioni = [
+  { sub: 'mappa/', titolo: s.mappa, testo: s.mappaTesto },
+  { sub: 'generatori/', titolo: s.generatori, testo: s.generatoriTesto },
+  { sub: 'bestiario/', titolo: s.bestiario, testo: s.bestiarioTesto },
+  { sub: 'avventure/', titolo: s.avventure, testo: s.avventureTesto },
+  { sub: 'download/', titolo: s.download, testo: s.downloadTesto },
+  { sub: 'mailing-list/', titolo: s.mailingList, testo: s.mailingListTesto },
+];
+---
+
+<h1>The Mist</h1>
+<p>{s.intro}</p>
+
+<hr />
+
+<section>
+  <h2>{s.descrTitolo}</h2>
+  <p>{s.descr1}</p>
+  <p>{s.descr2}</p>
+
+  <h3>{s.pilastriTitolo}</h3>
+  <ul>
+    {s.pilastri.map((p) => <li>{p}</li>)}
+  </ul>
+</section>
+
+<hr />
+
+<nav aria-label={s.sezioni}>
+  <h2>{s.sezioni}</h2>
+  <ul style="list-style: none; padding: 0;">
+    {
+      sezioni.map((x) => (
+        <li style="margin-block: 1.4rem;">
+          <a href={urlMist(lang, x.sub)} style="font-size: 1.3rem;">{x.titolo}</a>
+          <div style="color: var(--tm-muted);">{x.testo}</div>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

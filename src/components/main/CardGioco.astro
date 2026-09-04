@@ -1,0 +1,18 @@
+---
+import type { CollectionEntry } from 'astro:content';
+interface Props { gioco: CollectionEntry<'giochi'> }
+const { gioco } = Astro.props;
+const d = gioco.data;
+---
+
+<article class="rz-card">
+  <a href={`/giochi/${gioco.id}/`} style="text-decoration: none; color: inherit;">
+    <div class="rz-card__body">
+      <h3 style="margin-top: 0;">{d.titolo}</h3>
+      <p style="color: var(--rz-muted); font-size: 0.8rem; margin: 0 0 0.5rem;">
+        {d.sistema} · {d.anno} · {d.stato === 'pubblicato' ? 'pubblicato' : 'in sviluppo'}
+      </p>
+      <p>{d.estratto}</p>
+    </div>
+  </a>
+</article>

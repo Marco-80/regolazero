@@ -1,0 +1,47 @@
+---
+import { getCollection } from 'astro:content';
+import MainLayout from '../layouts/MainLayout.astro';
+import CardGioco from '../components/main/CardGioco.astro';
+import CardArticolo from '../components/main/CardArticolo.astro';
+import { articoliPubblicati } from '../lib/articoli';
+
+const giochi = (await getCollection('giochi')).sort(
+  (a, b) => a.data.ordine - b.data.ordine || b.data.anno - a.data.anno,
+);
+const articoli = (await articoliPubblicati()).slice(0, 4);
+---
+
+<MainLayout
+  titolo="Home"
+  descrizione="RegolaZero — publisher indie di giochi di ruolo. Produzioni originali e materiali per altri sistemi."
+>
+  <h1>RegolaZero</h1>
+  <p>
+    Publisher indie di giochi di ruolo. Pubblichiamo le nostre produzioni
+    originali — a partire da <a href="/giochi/the-mist/">The Mist</a> — e
+    materiali supplementari per i sistemi di altri autori.
+  </p>
+
+  <h2>I nostri giochi</h2>
+  {
+    giochi.length === 0 ? (
+      <p><em>Presto in arrivo.</em></p>
+    ) : (
+      <div class="rz-grid">
+        {giochi.map((g) => <CardGioco gioco={g} />)}
+      </div>
+    )
+  }
+
+  <h2 style="margin-top: 3rem;">Ultimi articoli</h2>
+  {
+    articoli.length === 0 ? (
+      <p><em>Presto in arrivo.</em></p>
+    ) : (
+      <div class="rz-grid">
+        {articoli.map((a) => <CardArticolo articolo={a} />)}
+      </div>
+    )
+  }
+  <p><a href="/articoli/">Tutti gli articoli →</a></p>
+</MainLayout>

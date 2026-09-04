@@ -1,0 +1,95 @@
+---
+import { getCollection, render } from 'astro:content';
+import MainLayout from '../../../layouts/MainLayout.astro';
+import CardArticolo from '../../../components/main/CardArticolo.astro';
+import { isPubblicato, isPubblicatoContenuto } from '../../../lib/articoli';
+
+export async function getStaticPaths() {
+  const giochi = await getCollection('giochi');
+  return giochi.map((g) => ({ params: { gioco: g.id }, props: { gioco: g } }));
+}
+
+const { gioco } = Astro.props;
+const d = gioco.data;
+const { Content } = await render(gioco);
+
+const articoli = (await getCollection('articoli', isPubblicato))
+  .filter((a) => a.data.gioco === gioco.id)
+  .sort((a, b) => b.data.data.getTime() - a.data.data.getTime());
+
+const contenuti = (await getCollection('contenuti', isPubblicatoContenuto)).filter(
+  (c) => c.data.gioco === gioco.id,
+);
+const generatori = (await getCollection('generatori')).filter(
+  (x) => x.data.gioco === gioco.id,
+);
+---
+
+<MainLayout titolo={d.titolo} descrizione={d.estratto}>
+  <h1>{d.titolo}</h1>
+  <p style="color: var(--rz-muted);">
+    {d.sistema} · {d.anno} · {d.stato === 'pubblicato' ? 'pubblicato' : 'in sviluppo'}
+  </p>
+
+  <div class="rz-prose"><Content /></div>
+
+  {
+    d.microsito && (
+      <p style="margin: 2rem 0;">
+        <a href={d.microsito} style="font-weight: 700; font-size: 1.1rem;">
+          Entra nel mondo di {d.titolo} →
+        </a>
+      </p>
+    )
+  }
+
+  {
+    d.link_esterni.length > 0 && (
+      <ul>
+        {d.link_esterni.map((l) => (
+          <li><a href={l.url}>{l.label}</a></li>
+        ))}
+      </ul>
+    )
+  }
+
+  <hr />
+
+  <section>
+    <h2>Articoli</h2>
+    {
+      articoli.length === 0 ? (
+        <p><em>Nessun articolo per ora.</em></p>
+      ) : (
+        <>
+          <div class="rz-grid">
+            {articoli.slice(0, 4).map((a) => <CardArticolo articolo={a} />)}
+          </div>
+          <p><a href={`/giochi/${gioco.id}/articoli/`}>Tutti gli articoli di {d.titolo} →</a></p>
+        </>
+      )
+    }
+  </section>
+
+  <section>
+    <h2>Contenuti</h2>
+    {
+      contenuti.length === 0 ? (
+        <p><em>Nessun contenuto per ora.</em></p>
+      ) : (
+        <p><a href={`/giochi/${gioco.id}/contenuti/`}>{contenuti.length} contenuti →</a></p>
+      )
+    }
+  </section>
+
+  <section>
+    <h2>Generatori</h2>
+    {
+      generatori.length === 0 ? (
+        <p><em>Nessun generatore per ora.</em></p>
+      ) : (
+        <p><a href={`/giochi/${gioco.id}/generatori/`}>{generatori.length} generatori →</a></p>
+      )
+    }
+  </section>
+</MainLayout>

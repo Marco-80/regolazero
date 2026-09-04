@@ -1,0 +1,52 @@
+---
+import '../styles/the-mist.css';
+import MistReturnLink from '../components/the-mist/MistReturnLink.astro';
+import LanguageSwitcher from '../components/the-mist/LanguageSwitcher.astro';
+import { LINGUA_DEFAULT } from '../i18n/the-mist';
+import type { Lingua } from '../i18n/the-mist';
+
+// Layout DEDICATO al microsito. Non importare mai MainLayout né i suoi
+// componenti di navigazione qui dentro (CLAUDE.md §7.2).
+// Lingue SEPARATE: ogni pagina è resa in UNA sola lingua (CLAUDE.md §7.3).
+
+interface Props {
+  titolo: string;
+  lang?: Lingua;
+  descrizione?: string;
+}
+
+const {
+  titolo,
+  lang = LINGUA_DEFAULT,
+  descrizione = lang === 'en'
+    ? 'The Mist — dark fantasy TTRPG compatible with Mörk Borg. Set in the Braenmore, smothered by the Mist.'
+    : 'The Mist — GdR dark fantasy compatibile Mörk Borg. Ambientato nel Braenmore, soffocato dalla Nebbia.',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titolo} — The Mist</title>
+    <meta name="description" content={descrizione} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={`${titolo} — The Mist`} />
+    <meta property="og:description" content={descrizione} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content={lang === 'en' ? 'en_GB' : 'it_IT'} />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <div class="tm-wrap" data-pagefind-body data-pagefind-filter={`lang:${lang}`}>
+      <slot />
+    </div>
+    <div class="tm-corner">
+      <LanguageSwitcher lang={lang} />
+      <MistReturnLink lang={lang} />
+    </div>
+  </body>
+</html>

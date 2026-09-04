@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import { urlMist, t } from '../../../i18n/the-mist';
+import type { Lingua } from '../../../i18n/the-mist';
+import { vociPerLingua } from '../../../i18n/content';
+
+interface Props { lang: Lingua }
+const { lang } = Astro.props;
+const s = t[lang];
+
+const voci = vociPerLingua(await getCollection('bestiario'), lang).sort((a, b) =>
+  a.entry.data.nome.localeCompare(b.entry.data.nome, lang),
+);
+---
+
+<h1>{s.bestiario}</h1>
+{
+  voci.length === 0 ? (
+    <p><em>{s.nessunaScheda}</em></p>
+  ) : (
+    <ul style="list-style: none; padding: 0;">
+      {voci.map(({ base, entry }) => (
+        <li style="margin-block: 1rem;">
+          <a href={urlMist(lang, `bestiario/${base}/`)} style="font-size: 1.2rem;">
+            {entry.data.nome}
+          </a>
+          {entry.data.pf !== undefined && (
+            <span style="color: var(--tm-muted);"> — PF {entry.data.pf}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}

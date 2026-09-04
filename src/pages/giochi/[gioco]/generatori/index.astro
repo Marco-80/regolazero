@@ -1,0 +1,36 @@
+---
+import { getCollection } from 'astro:content';
+import MainLayout from '../../../../layouts/MainLayout.astro';
+
+export async function getStaticPaths() {
+  const giochi = await getCollection('giochi');
+  return giochi.map((g) => ({ params: { gioco: g.id }, props: { gioco: g } }));
+}
+
+const { gioco } = Astro.props;
+const generatori = (await getCollection('generatori')).filter(
+  (x) => x.data.gioco === gioco.id,
+);
+---
+
+<MainLayout titolo={`Generatori — ${gioco.data.titolo}`}>
+  <p><a href={`/giochi/${gioco.id}/`}>← {gioco.data.titolo}</a></p>
+  <h1>Generatori — {gioco.data.titolo}</h1>
+
+  {
+    generatori.length === 0 ? (
+      <p><em>Nessun generatore.</em></p>
+    ) : (
+      <ul style="list-style: none; padding: 0;">
+        {generatori.map((x) => (
+          <li style="margin-block: 1rem;">
+            <a href={`/giochi/${gioco.id}/generatori/${x.id}/`} style="font-size: 1.2rem;">
+              {x.data.titolo}
+            </a>
+            <div style="color: var(--rz-muted);">{x.data.estratto}</div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</MainLayout>

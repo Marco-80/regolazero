@@ -1,0 +1,130 @@
+---
+import { t } from '../../../i18n/the-mist';
+import type { Lingua } from '../../../i18n/the-mist';
+
+interface Props { lang: Lingua }
+const { lang } = Astro.props;
+const s = t[lang];
+
+// Endpoint del backend (Cloudflare Worker, §7.5). Se non configurato, la
+// pagina ripiega su un mailto.
+const endpoint = import.meta.env.PUBLIC_MAILINGLIST_ENDPOINT ?? '';
+const contatto = import.meta.env.PUBLIC_MAILINGLIST_FALLBACK_EMAIL ?? 'info@regolazero.it';
+---
+
+<h1>{s.mlTitolo}</h1>
+<p>{s.mlIntro}</p>
+
+{
+  endpoint ? (
+    <form class="tm-form" id="ml-form" method="post" action={endpoint} novalidate>
+      <input type="hidden" name="lingua" value={lang} />
+      {/* honeypot anti-bot: deve restare vuoto */}
+      <div class="tm-hp" aria-hidden="true">
+        <label>Lascia vuoto questo campo
+          <input type="text" name="azienda" tabindex="-1" autocomplete="off" />
+        </label>
+      </div>
+
+      <label class="tm-field">
+        <span>{s.mlEmailLabel}</span>
+        <input
+          type="email"
+          name="email"
+          required
+          autocomplete="email"
+          placeholder={s.mlEmailPlaceholder}
+        />
+      </label>
+
+      <label class="tm-check">
+        <input type="checkbox" name="consenso" required />
+        <span>{s.mlConsenso}</span>
+      </label>
+
+      <button type="submit">{s.mlSubmit}</button>
+      <p class="tm-form__msg" role="status" aria-live="polite" hidden></p>
+    </form>
+  ) : (
+    <p>
+      {s.mlNonConfigurato} <a href={`mailto:${contatto}`}>{contatto}</a>.
+    </p>
+  )
+}
+
+<script is:inline define:vars={{ okMsg: s.mlOk, errMsg: s.mlErrore, badEmail: s.mlEmailNonValida, sending: s.mlInvio, submitLabel: s.mlSubmit }}>
+  var form = document.getElementById('ml-form');
+  if (form) {
+    var msg = form.querySelector('.tm-form__msg');
+    var btn = form.querySelector('button[type="submit"]');
+    var started = Date.now();
+
+    function show(text, ok) {
+      msg.textContent = text;
+      msg.hidden = false;
+      msg.dataset.state = ok ? 'ok' : 'error';
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var data = new FormData(form);
+      if (data.get('azienda')) return; // honeypot
+      if (Date.now() - started < 2000) return; // troppo veloce per un umano
+      var email = String(data.get('email') || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { show(badEmail, false); return; }
+
+      btn.disabled = true;
+      var prev = btn.textContent;
+      btn.textContent = sending;
+      try {
+        var res = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            lingua: data.get('lingua'),
+            consenso: !!data.get('consenso'),
+            ts: new Date().toISOString(),
+          }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        form.reset();
+        show(okMsg, true);
+      } catch (err) {
+        show(errMsg, false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prev || submitLabel;
+      }
+    });
+  }
+</script>
+
+<style>
+  .tm-form { display: grid; gap: 1rem; max-width: 26rem; margin-top: 1.5rem; }
+  .tm-field { display: grid; gap: 0.35rem; }
+  .tm-field span { color: var(--tm-muted); font-size: 0.85rem; }
+  .tm-form input[type='email'] {
+    font: inherit;
+    padding: 0.55rem 0.7rem;
+    background: var(--tm-fog);
+    border: 1px solid var(--tm-border);
+    color: var(--tm-text);
+    border-radius: 4px;
+  }
+  .tm-check { display: flex; gap: 0.5rem; align-items: start; font-size: 0.85rem; color: var(--tm-muted); }
+  .tm-form button {
+    justify-self: start;
+    font: inherit;
+    padding: 0.5rem 1.1rem;
+    background: var(--tm-accent);
+    color: #f4efe6;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .tm-form button:disabled { opacity: 0.6; cursor: progress; }
+  .tm-form__msg[data-state='ok'] { color: var(--tm-accent-2); }
+  .tm-form__msg[data-state='error'] { color: var(--tm-accent); }
+  .tm-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+</style>

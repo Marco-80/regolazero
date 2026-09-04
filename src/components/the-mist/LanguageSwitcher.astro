@@ -1,0 +1,49 @@
+---
+// Selettore lingua del microsito The Mist (CLAUDE.md §7.3).
+// Lingue SEPARATE: ogni voce è un LINK alla pagina gemella nell'altra lingua.
+// La lingua attiva è marcata e non cliccabile.
+import { LINGUE, BANDIERA, NOME_LINGUA, altMistPath, t } from '../../i18n/the-mist';
+import type { Lingua } from '../../i18n/the-mist';
+
+interface Props {
+  lang: Lingua;
+}
+const { lang } = Astro.props;
+
+// pathname corrente senza il prefisso lingua, per costruire la gemella.
+const qui = Astro.url.pathname;
+const gemella = altMistPath(qui);
+
+const voci = LINGUE.map((l) => ({
+  l,
+  attiva: l === lang,
+  href: l === lang ? qui : gemella,
+}));
+---
+
+<nav class="tm-lang" aria-label={t[lang].lingua} data-pagefind-ignore>
+  {
+    voci.map(({ l, attiva, href }) =>
+      attiva ? (
+        <span class="tm-lang__item is-active" aria-current="true" title={NOME_LINGUA[l]}>
+          <span aria-hidden="true">{BANDIERA[l]}</span>
+          <span class="tm-lang__t">{l.toUpperCase()}</span>
+        </span>
+      ) : (
+        <a class="tm-lang__item" href={href} title={NOME_LINGUA[l]} data-set-lang={l}>
+          <span aria-hidden="true">{BANDIERA[l]}</span>
+          <span class="tm-lang__t">{l.toUpperCase()}</span>
+        </a>
+      ),
+    )
+  }
+</nav>
+
+<script is:inline>
+  // Ricorda la preferenza (utile per un eventuale redirect futuro dalla home).
+  document.querySelectorAll('[data-set-lang]').forEach(function (a) {
+    a.addEventListener('click', function () {
+      try { localStorage.setItem('tm-lang', a.getAttribute('data-set-lang')); } catch (e) {}
+    });
+  });
+</script>
