@@ -860,3 +860,55 @@ server, quindi **gate lato client**, non una vera protezione):
   vede comunque il contenuto. Il gate blocca solo la **navigazione normale in
   browser**. Se in futuro serve un blocco vero, servirebbe un layer con logica
   a runtime (es. Cloudflare Access davanti al dominio) — fuori scope ora.
+
+---
+
+## 15. Login vero (pulsante lucchetto) — Netlify Identity, solo su invito
+
+Deciso dall'utente: oltre al link di bypass (§14, resta attivo per test
+rapidi), un **login vero** con username/password + un flusso di
+"registrazione" **solo su invito** (non auto-iscrizione libera), attivabile
+da un pulsante a triangolo con lucchetto in basso a sinistra nella pagina
+`/coming-soon/`.
+
+**Perché Netlify Identity e non un backend custom**: dà username/password,
+inviti via email, reset password e "accetta invito → imposta password" già
+pronti, gratis, senza scrivere un server. **Non serve spostare l'hosting**:
+il sito resta su GitHub Pages, si usa un progetto Netlify **solo** come
+provider di identità (stesso servizio già proposto in §9.3 per il login
+Google di Decap — le due cose sono indipendenti per ora, si può collegare lo
+stesso Identity a entrambe più avanti, non ancora fatto).
+
+### Setup (da fare nel pannello Netlify — non posso farlo io: serve un account)
+
+1. Su [app.netlify.com](https://app.netlify.com), crea un sito qualsiasi
+   ("Add new site" → **Deploy manually** → trascina anche solo una cartella
+   con un `index.html` vuoto: serve solo per avere un progetto Netlify, il
+   contenuto non conta, non sostituisce GitHub Pages).
+2. Site settings → **Identity** → **Enable Identity**.
+3. Identity → **Registration** → **Invite only**.
+4. Identity → **Invite users** → invita gli indirizzi email di chi deve
+   avere accesso in anteprima.
+5. Identity → Settings → **Emails**: imposta l'URL di conferma/invito su
+   `https://regolazero.it/coming-soon/` (**deve** essere questa pagina
+   esatta — il link d'invito porta un token nell'URL che il pulsante
+   lucchetto deve poter leggere; se il gate reindirizzasse altrove prima, il
+   token si perderebbe).
+6. Copia l'URL del sito Netlify creato al punto 1 (tipo
+   `https://nome-a-caso.netlify.app`) e dammelo: lo metto in
+   `NETLIFY_IDENTITY_URL` (`src/config/site.ts`, formato
+   `https://nome-a-caso.netlify.app/.netlify/identity`) e ridistribuisco.
+
+### Come funziona lato codice
+
+- `src/components/LoginTriangle.astro`: bottone SVG (triangolo + lucchetto),
+  carica `netlify-identity-widget.js` solo se `NETLIFY_IDENTITY_URL` è
+  configurato, altrimenti il click mostra un avviso "non ancora
+  configurato" (nessun endpoint finto).
+- Al login riuscito (`netlifyIdentity.on('login', …)`) o se l'utente ha già
+  una sessione valida al caricamento (`on('init', user)`), imposta lo stesso
+  `localStorage[BYPASS_KEY]` usato dal link di bypass (§14) e porta alla
+  home. I due meccanismi di sblocco (link segreto e login Identity)
+  convivono, stessa chiave.
+- Il pulsante sta per ora solo su `/coming-soon/` (è l'unica pagina che i
+  visitatori non autenticati vedono comunque).

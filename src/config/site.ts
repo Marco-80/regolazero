@@ -19,3 +19,13 @@ export const BYPASS_CODE = 'nebbia-2026';
 
 /** Chiave localStorage in cui si ricorda lo sblocco, valida su tutto il dominio. */
 export const BYPASS_KEY = 'rz-bypass-coming-soon';
+
+/**
+ * URL base dell'API di Netlify Identity usata per il login vero (invito via
+ * email, username/password) sul pulsante lucchetto della pagina coming-soon.
+ * Es. "https://qualcosa.netlify.app/.netlify/identity" — vedi CLAUDE.md §15.
+ * Vuoto finché non è stato creato il progetto Netlify Identity: il pulsante
+ * resta presente ma non fa nulla di funzionale (nessun endpoint reale a cui
+ * parlare).
+ */
+export const NETLIFY_IDENTITY_URL = '';

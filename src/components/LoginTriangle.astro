@@ -1,0 +1,101 @@
+---
+// Pulsante "triangolo con lucchetto" in alto a destra, per il login vero
+// (Netlify Identity, invito via email — CLAUDE.md §15).
+import { BYPASS_KEY, NETLIFY_IDENTITY_URL } from '../config/site';
+
+const configurato = Boolean(NETLIFY_IDENTITY_URL);
+---
+
+<button type="button" id="rz-login-triangle" aria-label="Accedi" title="Accedi" class="rz-corner-badge">
+  <img src="/images/site/lucchetto.png" alt="" width="160" height="130" />
+</button>
+
+{
+  configurato && (
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" />
+  )
+}
+
+<script define:vars={{ BYPASS_KEY, NETLIFY_IDENTITY_URL, configurato }}>
+  (function () {
+    var btn = document.getElementById('rz-login-triangle');
+    if (!btn) return;
+
+    function entra() {
+      try {
+        localStorage.setItem(BYPASS_KEY, '1');
+      } catch (e) {}
+      window.location.href = '/';
+    }
+
+    if (!configurato) {
+      btn.addEventListener('click', function () {
+        alert(
+          'Login non ancora configurato su questo ambiente. Chiedi il link di anteprima a chi gestisce il sito.',
+        );
+      });
+      return;
+    }
+
+    function avvia() {
+      if (!window.netlifyIdentity) return;
+      window.netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_URL });
+
+      window.netlifyIdentity.on('init', function (user) {
+        if (user) entra(); // sessione già valida (visita successiva)
+      });
+      window.netlifyIdentity.on('login', entra);
+
+      btn.addEventListener('click', function () {
+        window.netlifyIdentity.open('login');
+      });
+    }
+
+    // lo script del widget potrebbe non essere ancora pronto
+    if (window.netlifyIdentity) avvia();
+    else document.addEventListener('DOMContentLoaded', avvia);
+  })();
+</script>
+
+<style>
+  .rz-corner-badge {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 7.5rem;
+    height: 7.5rem;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    background: #111;
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    display: block;
+    z-index: 20;
+  }
+  .rz-corner-badge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* triangolo bianco inset: crea l'effetto "bordo" sulla sola diagonale
+       (il bordo su alto/destra non serve, coincide col taglio della pagina) */
+    margin: 0.16rem -0.16rem 0 0.16rem;
+    background: #f2f0eb;
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+  }
+  .rz-corner-badge img {
+    position: absolute;
+    top: 1.4rem;
+    right: 1.5rem;
+    width: 2.5rem;
+    height: auto;
+    z-index: 1;
+  }
+  .rz-corner-badge:hover,
+  .rz-corner-badge:focus-visible {
+    filter: brightness(1.08);
+  }
+  .rz-corner-badge:focus-visible {
+    outline: 2px solid #f2f0eb;
+    outline-offset: -4px;
+  }
+</style>
