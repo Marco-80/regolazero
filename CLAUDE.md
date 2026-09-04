@@ -836,12 +836,12 @@ server, quindi **gate lato client**, non una vera protezione):
   `COMING_SOON` è vero e la pagina non è `/coming-soon/`, reindirizza lì
   (`location.replace`), a meno che `localStorage['rz-bypass-coming-soon']`
   non sia già impostato.
-- **Bypass per chi sviluppa/testa**: visitare una volta
-  `https://regolazero.it/?anteprima=nebbia-2026` (parametro e codice in
-  `site.ts`, `BYPASS_PARAM`/`BYPASS_CODE`) imposta il flag in `localStorage` e
-  da lì in poi quel browser vede il sito normalmente, su tutte le pagine.
-  Cambiare `BYPASS_CODE` in `site.ts` in qualsiasi momento (non è un vero
-  segreto: è nel codice sorgente pubblico del repo).
+- **Sblocco: solo login vero (§15).** Il vecchio link segreto
+  `?anteprima=...` (parametro + codice in chiaro nel sorgente) è stato
+  **rimosso su richiesta dell'utente**: ridondante ora che c'è un login
+  reale — chi entra con un account con ruolo `preview`/`editor` ottiene lo
+  stesso flag in `localStorage`, senza un secondo canale meno sicuro in
+  parallelo.
 - Pagina `src/pages/coming-soon.astro`: standalone, `noindex`, non passa dal
   gate (altrimenti loop).
 - **Limite noto, da tenere presente**: essendo tutto statico, l'HTML reale
@@ -856,9 +856,9 @@ server, quindi **gate lato client**, non una vera protezione):
 ## 15. Login vero (pulsante lucchetto) — Netlify Identity, registrazione aperta + ruoli
 
 Deciso dall'utente (rivisto rispetto alla prima versione "solo su invito"):
-oltre al link di bypass (§14, resta attivo per test rapidi), un pulsante a
-triangolo con lucchetto in alto a destra su `/coming-soon/` apre un vero
-login/registrazione. Schema attuale:
+un pulsante a triangolo con lucchetto in alto a destra su `/coming-soon/`
+apre un vero login/registrazione — **unico modo per sbloccare il sito**, il
+vecchio link segreto (§14) è stato tolto. Schema attuale:
 
 - **Registrazione aperta a chiunque** (non più solo su invito).
 - Chi si registra **entra nell'elenco utenti di Netlify Identity** — che

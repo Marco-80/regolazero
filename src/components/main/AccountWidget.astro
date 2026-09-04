@@ -12,6 +12,7 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
       <a href="#" id="rz-account-login" hidden>Accedi</a>
       <span id="rz-account-logged" hidden>
         <a href="#" id="rz-account-email" title="Gestisci account"></a>
+        · <a href="/admin/" id="rz-account-admin" hidden>Admin</a>
         · <a href="#" id="rz-account-logout">Esci</a>
       </span>
     </div>
@@ -32,6 +33,7 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
     var loginA = document.getElementById('rz-account-login');
     var loggedS = document.getElementById('rz-account-logged');
     var emailA = document.getElementById('rz-account-email');
+    var adminA = document.getElementById('rz-account-admin');
     var logoutA = document.getElementById('rz-account-logout');
 
     function mostra(user) {
@@ -39,6 +41,8 @@ const configurato = Boolean(NETLIFY_IDENTITY_URL);
         loginA.hidden = true;
         loggedS.hidden = false;
         emailA.textContent = user.email || 'account';
+        var ruoli = (user.app_metadata && user.app_metadata.roles) || [];
+        adminA.hidden = ruoli.indexOf('editor') === -1;
       } else {
         loginA.hidden = false;
         loggedS.hidden = true;

@@ -7,17 +7,12 @@
  */
 export const COMING_SOON = true;
 
-/** Parametro URL che, se presente col codice giusto, sblocca la navigazione. */
-export const BYPASS_PARAM = 'anteprima';
-
 /**
- * "Codice" di bypass. Non è un vero segreto (è nel codice sorgente pubblico
- * del sito): serve solo a evitare che qualcuno ci finisca per caso.
- * Cambialo quando vuoi, semplicemente editando questo file.
+ * Chiave localStorage in cui si ricorda lo sblocco, valida su tutto il
+ * dominio. Impostata SOLO da un login riuscito con ruolo preview/editor
+ * (§15) — niente più link segreto con codice in chiaro nell'URL: era
+ * ridondante ora che c'è un login vero, tolto su richiesta dell'utente.
  */
-export const BYPASS_CODE = 'nebbia-2026';
-
-/** Chiave localStorage in cui si ricorda lo sblocco, valida su tutto il dominio. */
 export const BYPASS_KEY = 'rz-bypass-coming-soon';
 
 /**
