@@ -7,8 +7,9 @@
 
 ## 1. Cos'è, e come si costruisce (deciso il 04/09/2026, dopo un reset completo)
 
-Sito del publisher indie di giochi di ruolo **RegolaZero** (Roberto
-Mazzucchi, Cristian Lenti, Alessandra Panuccio). In futuro ospiterà: la
+Sito di **RegolaZero** (Roberto Mazzucchi, Cristian Lenti, Alessandra
+Panuccio) — **non un publisher**: un gruppo di giocatori che, tra le
+altre cose, crea contenuti per giochi di ruolo. In futuro ospiterà: la
 presentazione delle produzioni originali (a partire da **The Mist**, GdR
 dark fantasy compatibile Mörk Borg, licenza *Mörk Borg Third Party
 License*) e materiali gratuiti per sistemi di altri autori.
@@ -34,16 +35,30 @@ nessuna forma — Identity/Git Gateway/hosting), Strapi/Payload/Ghost/
 WordPress, Bootstrap o jQuery senza che sia l'utente a richiederlo di
 nuovo direttamente** — è già stato deciso di no, più volte.
 
-**Eccezione decisa il 05/09: Firebase (Firestore)** è l'unico backend
-approvato, per due usi precisi — salvataggio punti della mappa (§4/§6) e
-iscrizioni newsletter (§4). Caricato via CDN (`firebase-app-compat.js` +
-`firebase-firestore-compat.js`), nessun SDK da installare, coerente con
+**Eccezione decisa il 05/09: Firebase (Firestore + Auth)** è l'unico
+backend approvato, per usi precisi — salvataggio punti della mappa
+(§4/§6), iscrizioni newsletter (§4) e mini blog (§6bis). Caricato via CDN
+(`firebase-app-compat.js`, `firebase-firestore-compat.js`,
+`firebase-auth-compat.js`), nessun SDK da installare, coerente con
 "niente build". La `firebaseConfig` (apiKey ecc.) **è pensata per stare
 in chiaro nel codice pubblico** — a differenza di un token GitHub, non è
-un segreto: la sicurezza sta tutta nelle **regole di Firestore** (v. §4).
-Non usare Firebase per altro (auth, hosting, storage...) senza che
-l'utente lo richieda di nuovo esplicitamente — resta un'eccezione mirata,
-non una porta aperta a "tanto ormai ce l'abbiamo".
+un segreto: la sicurezza sta tutta nelle **regole di Firestore** (v. §6/
+§6bis/§8). **Firebase Auth** (email/password) è stato aggiunto il 05/09
+per dare all'utente un accesso personale che sblocca modifica/
+cancellazione sulla mappa e scrittura sul blog — un solo account
+(l'utente), niente registrazione pubblica. Non usare Firebase per altro
+(hosting, storage...) senza che l'utente lo richieda di nuovo
+esplicitamente.
+
+**Eccezione decisa il 05/09: Pure CSS**, framework CSS minimale (~4KB,
+via CDN, `cdnjs.cloudflare.com/.../pure/3.0.0/`), usato **solo** nelle
+pagine del blog (`CMS/`) per la griglia a due colonne e i bottoni di
+base — richiesto esplicitamente dall'utente per lo stile del blog, non
+esteso al resto del sito. **Attenzione**: `pure-min.css` da solo NON
+include le classi responsive (`pure-u-md-*`) — serve caricare *anche*
+`grids-responsive-min.css` (bug incontrato il 05/09: senza quel secondo
+file la griglia resta a piena larghezza a qualunque risoluzione, nessun
+errore in console che lo segnali).
 
 ---
 
@@ -87,7 +102,11 @@ REGOLAZERO/
 │   └── punti.json              NON PIÙ USATO dalla pagina (i punti sono
 │                                 su Firestore) — lasciato come backup
 │                                 dei 9 luoghi iniziali, v. §6
-├── the-mist/index.html         stub "in arrivo" (link da pannello destro)
+├── the-mist/index.html         stub "in arrivo" (link da pannello destro,
+│                                 con link testuale al blog, v. §6bis)
+├── CMS/                        mini blog (Firestore + Pure CSS, v. §6bis)
+│   ├── index.html               elenco articoli, stile "docs" a due colonne
+│   └── articolo.html            singolo articolo (?id=... in query string)
 ├── images/
 │   └── site/
 │       ├── logo-regolazero.png         logo bianco, sfondo trasparente
@@ -225,6 +244,14 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   `.contenuto` (e `pointer-events:auto` su `.salita` per ridare i click
   al logo) intercetta i click destinati ai pannelli ovunque tranne
   esattamente sul logo.
+- **Link al blog** (`#link-blog`, testo "Visita il blog RegolaZero",
+  aggiunto 05/09): elemento **indipendente** da `#pannelli`, non al suo
+  interno — inserirlo dentro `#pannelli` avrebbe alterato i calcoli JS di
+  altezza/posizionamento di quel blocco (fragili, v. sopra). Posizionato
+  con un semplice `position:fixed; bottom:1.5rem`, stessa dissolvenza
+  (3,4s) e stesso momento di comparsa dei pannelli (stesso `setTimeout`).
+  Punta a `/CMS/`. Stesso link anche in `the-mist/index.html` (l'utente
+  ha chiesto entrambi i posti, non uno o l'altro).
 - **Audio di sottofondo**: player YouTube nascosto (video attuale
   `1YhKgK_2PU4`, ripristinato il 05/09 dopo una prova con `c6RiHp2-bGY`
   che resta commentato nel codice nel caso si torni indietro), dominio
@@ -287,6 +314,14 @@ resta lì invariata come riferimento storico, non più la fonte).
     `fitBounds`, che invece "contiene" lasciando spazio vuoto attorno).
     `maxBounds` = esattamente i bordi dell'immagine, `maxBoundsViscosity:
     1`: non si esce mai dalla mappa trascinando.
+    **Bug incontrato**: chiamare `getBoundsZoom` subito dopo `L.map()`
+    a volte legge una dimensione del container non ancora aggiornata
+    (letta 0 o comunque sbagliata prima che il browser finisca il primo
+    layout — stessa famiglia del bug `innerWidth` già visto altrove in
+    questo progetto), col risultato che su schermi molto larghi
+    restavano bande vuote ai lati. Corretto con `map.invalidateSize()`
+    prima di calcolare lo zoom, dentro una funzione richiamata sia
+    all'avvio sia al resize (`impostaZoomCopertura()`).
   - Un solo controllo zoom, in basso a destra (`zoomControl: false`
     sulla mappa + `L.control.zoom({position:'bottomright'})` a parte —
     altrimenti Leaflet mette di suo un secondo controllo in alto a
@@ -296,8 +331,11 @@ resta lì invariata come riferimento storico, non più la fonte).
     popup al click.
 - **Categorie** (`luogo`, `citta`, `villaggio`, `png`, `mostro`,
   `maniero`): icona propria (da Flaticon, fornite dall'utente il 05/09,
-  in `mappa/icone/`) + colore del bordo del segnalino a goccia (stile
-  Google Maps, via `L.divIcon`).
+  in `mappa/icone/`), via `L.divIcon`. **Solo l'icona, senza sfondo/
+  goccia** (tolta il 05/09 su richiesta esplicita — prima era un
+  segnalino a goccia colorato per categoria con l'icona dentro).
+  Ancorata al centro dell'icona (non più alla punta della goccia, che
+  non esiste più).
 - **Click sulla mappa** (su spazio vuoto) → modale di creazione:
   categoria, nome, descrizione, pulsante "Genera automaticamente"
   (tabelle originali scritte per questo tool, in italiano — **non**
@@ -306,20 +344,27 @@ resta lì invariata come riferimento storico, non più la fonte).
   Maps (nome + descrizione), via `bindPopup`.
 - **Persistenza: Firestore**, collezione `punti` (progetto Firebase
   `regolazero`, v. §1 per la config). Lettura pubblica per tutti i
-  visitatori (necessaria per mostrare la mappa), scrittura permessa a
-  chiunque (non c'è login) ma **validata dalle regole** — categoria
-  deve essere una delle 6 valide, nome/descrizione con limiti di
-  lunghezza, lat/lng numerici. **Nessuna modifica o cancellazione dal
-  client** (`allow update, delete: if false`): per correggere/rimuovere
-  un punto sbagliato serve la console Firebase (Firestore Database →
-  collezione `punti`), non c'è modo di farlo dal sito. Se in futuro
-  serve poterlo fare dal sito stesso, serve un sistema di login
-  (Firebase Auth) per l'utente — da valutare quando richiesto.
-  I 9 luoghi originali (nomi presi dal vecchio prototipo, testi ancora
-  segnaposto) sono stati migrati su Firestore il 05/09; il file
-  `mappa/punti.json` resta solo come backup, **non è più letto dalla
-  pagina**. Il pulsante "Esporta punti (JSON)" in alto a destra scarica
-  un backup manuale di quello che c'è in quel momento su Firestore.
+  visitatori (necessaria per mostrare la mappa), **creazione** permessa
+  a chiunque (non c'è registrazione pubblica) ma **validata dalle
+  regole** — categoria deve essere una delle 6 valide, nome/descrizione
+  con limiti di lunghezza, lat/lng numerici.
+  **Modifica/cancellazione: solo da autenticati** (05/09, v. Login
+  sotto) — un pulsante "Modifica" appare nel popup di un punto solo se
+  l'utente ha fatto login; apre lo stesso modale di creazione
+  precompilato, con in più un pulsante "Elimina questo punto".
+  I 9 luoghi originali (nomi presi dal vecchio prototipo) sono stati
+  migrati su Firestore il 05/09; il file `mappa/punti.json` resta solo
+  come backup, **non è più letto dalla pagina**. Il pulsante "Esporta
+  punti (JSON)" in alto a destra scarica un backup manuale di quello
+  che c'è in quel momento su Firestore. **Il testo segnaposto "(Testo
+  segnaposto, da sostituire col lore definitivo.)" su questi 9 punti è
+  ancora da accorciare** — l'utente ha scelto di farlo lui stesso dal
+  sito (login → click sul punto → Modifica), non è stato fatto da
+  Claude Code.
+  **Login** (`#btn-accedi`/`#btn-esci`, in alto a destra): Firebase Auth
+  email/password, un solo account (quello dell'utente, creato da lui
+  nella console Firebase → Authentication). Non è una registrazione
+  pubblica — nessun link "crea account" da nessuna parte.
   **Regole di sicurezza attuali** (da aggiornare qui se cambiano —
   tenerne traccia, non solo nella console Firebase):
   ```
@@ -333,7 +378,15 @@ resta lì invariata come riferimento storico, non più la fonte).
       && request.resource.data.descrizione.size() <= 500
       && request.resource.data.lat is number
       && request.resource.data.lng is number;
-    allow update, delete: if false;
+    allow update: if request.auth != null
+      && request.resource.data.categoria in ['luogo','citta','villaggio','png','mostro','maniero']
+      && request.resource.data.nome is string
+      && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 80
+      && request.resource.data.descrizione is string
+      && request.resource.data.descrizione.size() <= 500
+      && request.resource.data.lat is number
+      && request.resource.data.lng is number;
+    allow delete: if request.auth != null;
   }
   ```
 - **Generatori casuali — NON usare le tabelle del manuale di The Mist**:
@@ -356,6 +409,56 @@ resta lì invariata come riferimento storico, non più la fonte).
   (≥16px, evita lo zoom automatico di iOS al focus), modale con
   `max-height: 90vh` e scroll interno, marker e testo dimensionati per
   il tocco.
+
+---
+
+## 6bis. `CMS/` — mini blog (Firestore + Pure CSS)
+
+Creato il 05/09. **Contenuto**: articoli sul mondo dei giochi di ruolo in
+generale (non solo The Mist) — novità, dietro le quinte, guide. Raggiunto
+da un link testuale "Visita il blog RegolaZero" in home (sotto i
+pannelli) e in `the-mist/index.html` (v. §4).
+
+- **Layout "a due colonne"** stile documentazione (ispirato a
+  docs.classicpress.net, riferimento dell'utente): barra laterale con
+  gli articoli raggruppati per categoria (`pure-u-md-1-4`) + contenuto
+  principale (`pure-u-md-3-4`), impilati verticalmente sotto i 768px.
+  Griglia di **Pure CSS** (v. §1) — `pure-min.css` **+**
+  `grids-responsive-min.css` (il primo da solo non basta, v. §1).
+- **`CMS/index.html`**: elenco di tutti gli articoli pubblicati (schede
+  con categoria/titolo/estratto/data).
+- **`CMS/articolo.html`**: singolo articolo, letto da Firestore tramite
+  `?id=...` nella query string.
+- **Persistenza: Firestore**, collezione `blog_posts`. Campi: `titolo`,
+  `categoria` (testo libero, non un enum fisso come per i punti mappa —
+  i temi di un blog sono più aperti), `estratto`, `contenuto` (testo
+  semplice, un paragrafo per riga vuota — niente HTML/markdown, per
+  evitare qualunque rischio di injection dato che va incontro a
+  `textContent`, non `innerHTML`), `pubblicato` (bool).
+  **Solo l'utente autenticato (stesso login della mappa, v. §6) può
+  scrivere** — creare, modificare, eliminare articoli. I visitatori non
+  autenticati vedono solo gli articoli con `pubblicato: true`; l'utente
+  loggato vede anche le bozze (utile per scrivere in anticipo senza
+  pubblicare subito).
+  **Regole di sicurezza**:
+  ```
+  match /blog_posts/{postId} {
+    allow read: if resource.data.pubblicato == true || request.auth != null;
+    allow create: if request.auth != null
+      && request.resource.data.titolo is string && request.resource.data.titolo.size() > 0 && request.resource.data.titolo.size() <= 140
+      && request.resource.data.estratto is string && request.resource.data.estratto.size() <= 300
+      && request.resource.data.contenuto is string && request.resource.data.contenuto.size() <= 20000
+      && request.resource.data.categoria is string && request.resource.data.categoria.size() <= 60
+      && request.resource.data.pubblicato is bool;
+    allow update: if request.auth != null
+      && request.resource.data.titolo is string && request.resource.data.titolo.size() > 0 && request.resource.data.titolo.size() <= 140
+      && request.resource.data.estratto is string && request.resource.data.estratto.size() <= 300
+      && request.resource.data.contenuto is string && request.resource.data.contenuto.size() <= 20000
+      && request.resource.data.categoria is string && request.resource.data.categoria.size() <= 60
+      && request.resource.data.pubblicato is bool;
+    allow delete: if request.auth != null;
+  }
+  ```
 
 ---
 

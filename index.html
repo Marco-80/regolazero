@@ -117,6 +117,21 @@
       /* transform finale impostato via JS (calcolato per non finire mai
          sotto il logo, a qualunque risoluzione) */
     }
+    .link-blog {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 1.5rem;
+      z-index: 2;
+      text-align: center;
+      color: #9c9c9c;
+      font-size: 0.85rem;
+      text-decoration: none;
+      opacity: 0;
+      transition: opacity 3.4s ease;
+    }
+    .link-blog:hover { color: #cfcfcf; }
+    .link-blog--visibile { opacity: 1; }
     .pannello {
       border: 1px solid rgba(207, 207, 207, 0.35);
       border-radius: 18px;
@@ -252,6 +267,8 @@
     <a class="pannello pannello--laterale pannello--link" id="pannello-destra" href="/the-mist/" aria-label="Scopri The Mist"></a>
   </div>
 
+  <a class="link-blog" id="link-blog" href="/CMS/">Visita il blog RegolaZero</a>
+
   <div class="contenuto">
     <div class="salita" id="salita">
       <img class="logo" id="logo" src="/images/site/logo-regolazero.png" alt="RegolaZero" width="1600" height="656" />
@@ -320,6 +337,7 @@
         setTimeout(function () {
           pannelli.classList.add('pannelli--visibile');
           pannelli.style.transform = 'translateY(' + deltaPannelli + 'px)';
+          document.getElementById('link-blog').classList.add('link-blog--visibile');
         }, DURATA_LOGO_MS / 2);
       });
     })();

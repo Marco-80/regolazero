@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blog RegolaZero</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/3.0.0/pure-min.css" />
+  <!-- pure-min.css non include le classi responsive (pure-u-md-*): servono da questo secondo file -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/3.0.0/grids-responsive-min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #121212;
+      color: #cfcfcf;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    a { color: inherit; }
+
+    .barra-alto {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.85rem 1.25rem;
+      background: rgba(18, 18, 18, 0.9);
+      border-bottom: 1px solid rgba(207, 207, 207, 0.2);
+      backdrop-filter: blur(6px);
+    }
+    .barra-alto a.home { text-decoration: none; color: #cfcfcf; font-size: 0.85rem; opacity: 0.8; }
+    .barra-alto a.home:hover { opacity: 1; }
+    .barra-alto .titolo-blog { font-weight: 700; letter-spacing: 0.02em; }
+    .barra-alto .azioni { display: flex; gap: 0.5rem; }
+    /* .pure-button di Pure CSS dà già display/padding/border-radius/
+       cursor di base — qui sopra si sovrascrivono solo i colori per il
+       tema scuro. */
+    .pulsante-pillola {
+      border-radius: 999px;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: rgba(255, 255, 255, 0.04);
+      color: #cfcfcf;
+      font-size: 0.8rem;
+    }
+    .pulsante-pillola:hover { background: rgba(255, 255, 255, 0.12); color: #cfcfcf; }
+    .pulsante-pillola.primario { background: #e9e7e2; color: #1a1a1a; border-color: transparent; font-weight: 600; }
+    .pulsante-pillola.primario:hover { background: #fff; color: #1a1a1a; }
+
+    /* Layout a due colonne con la griglia di Pure CSS (.pure-g/.pure-u-*
+       nell'HTML) — qui solo le rifiniture (bordi, sticky, spaziature). */
+    .layout {
+      max-width: 78rem;
+      margin: 0 auto;
+    }
+    .barra-laterale {
+      padding: 1.5rem 1rem;
+      border-right: 1px solid rgba(207, 207, 207, 0.15);
+      position: sticky;
+      top: 3.4rem;
+      max-height: calc(100vh - 3.4rem);
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .barra-laterale h2 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8a8a8a;
+      margin: 1.3rem 0 0.5rem;
+    }
+    .barra-laterale h2:first-child { margin-top: 0; }
+    .barra-laterale ul { list-style: none; margin: 0; padding: 0; }
+    .barra-laterale li a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.88rem;
+      color: #cfcfcf;
+    }
+    .barra-laterale li a:hover { background: rgba(255, 255, 255, 0.06); }
+
+    .contenuto-principale {
+      box-sizing: border-box;
+      padding: 2rem 2rem 4rem;
+    }
+    .contenuto-principale h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.8rem;
+    }
+    .sottotitolo {
+      color: #9c9c9c;
+      margin: 0 0 2rem;
+      max-width: 40rem;
+    }
+    .elenco-articoli {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .scheda-articolo {
+      display: block;
+      text-decoration: none;
+      padding: 1.1rem 1.3rem;
+      border: 1px solid rgba(207, 207, 207, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.015);
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .scheda-articolo:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(207, 207, 207, 0.4);
+    }
+    .scheda-articolo .categoria {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9c9c9c;
+    }
+    .scheda-articolo h3 { margin: 0.3rem 0 0.4rem; font-size: 1.1rem; }
+    .scheda-articolo p { margin: 0; color: #b8b8b8; font-size: 0.9rem; }
+    .scheda-articolo .data { margin-top: 0.6rem; font-size: 0.75rem; color: #777; }
+
+    .vuoto { color: #8a8a8a; font-size: 0.9rem; }
+
+    /* 767px: stesso breakpoint di .pure-u-md-* di Pure CSS (sotto, la
+       griglia va già a piena larghezza da sola — qui si sistemano solo
+       le rifiniture che il grid system non tocca). */
+    @media (max-width: 767px) {
+      .barra-laterale {
+        position: static;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid rgba(207, 207, 207, 0.15);
+      }
+      .contenuto-principale { padding: 1.5rem 1.25rem 3rem; }
+    }
+
+    /* Modale nuovo/modifica articolo (solo per chi ha effettuato l'accesso) */
+    .overlay-modale {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+    .overlay-modale[hidden] { display: none; }
+    .modale {
+      width: min(34rem, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #1c1c1c;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      border-radius: 14px;
+      padding: 1.4rem;
+    }
+    .modale h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+    .modale label { display: block; font-size: 0.8rem; color: #9c9c9c; margin: 0.9rem 0 0.3rem; }
+    .modale input[type="text"], .modale textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.6rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: #e9e7e2;
+      color: #1a1a1a;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    .modale textarea { min-height: 10rem; resize: vertical; }
+    .riga-checkbox { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.9rem; }
+    .riga-checkbox label { margin: 0; color: #cfcfcf; font-size: 0.85rem; }
+    .riga-pulsanti { display: flex; gap: 0.6rem; margin-top: 1.2rem; flex-wrap: wrap; }
+    .riga-pulsanti button { flex: 1 1 auto; }
+  </style>
+</head>
+<body>
+  <div class="barra-alto">
+    <a class="home" href="/">← RegolaZero</a>
+    <span class="titolo-blog">Blog</span>
+    <div class="azioni">
+      <button type="button" class="pure-button pulsante-pillola" id="btn-accedi">Accedi</button>
+      <button type="button" class="pure-button pulsante-pillola" id="btn-esci" hidden>Esci</button>
+      <button type="button" class="pure-button pulsante-pillola primario" id="btn-nuovo" hidden>+ Nuovo articolo</button>
+    </div>
+  </div>
+
+  <div class="layout pure-g">
+    <nav class="barra-laterale pure-u-1 pure-u-md-1-4" id="barra-laterale">
+      <p class="vuoto">Caricamento...</p>
+    </nav>
+    <main class="contenuto-principale pure-u-1 pure-u-md-3-4">
+      <h1>Blog RegolaZero</h1>
+      <p class="sottotitolo">Articoli e appunti sul mondo dei giochi di ruolo — novità, dietro le quinte, e non solo su The Mist.</p>
+      <div class="elenco-articoli" id="elenco-articoli">
+        <p class="vuoto">Caricamento articoli...</p>
+      </div>
+    </main>
+  </div>
+
+  <div class="overlay-modale" id="overlay-login" hidden>
+    <div class="modale" role="dialog" aria-modal="true">
+      <h2>Accedi</h2>
+      <label for="login-email">Email</label>
+      <input type="text" id="login-email" autocomplete="username" />
+      <label for="login-password">Password</label>
+      <input type="text" id="login-password" autocomplete="current-password" style="-webkit-text-security:disc; text-security:disc;" />
+      <p id="login-errore" style="display:none; color:#d98c8c; font-size:0.8rem; margin-top:0.6rem;"></p>
+      <div class="riga-pulsanti">
+        <button type="button" class="pure-button pulsante-pillola" id="btn-login-annulla">Annulla</button>
+        <button type="button" class="pure-button pulsante-pillola primario" id="btn-login-entra">Entra</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay-modale" id="overlay-articolo" hidden>
+    <div class="modale" role="dialog" aria-modal="true">
+      <h2 id="articolo-modale-titolo">Nuovo articolo</h2>
+      <label for="campo-titolo">Titolo</label>
+      <input type="text" id="campo-titolo" />
+      <label for="campo-categoria">Categoria</label>
+      <input type="text" id="campo-categoria" placeholder="es. Novità, Dietro le quinte, Guide..." />
+      <label for="campo-estratto">Estratto (riassunto breve, per l'elenco)</label>
+      <textarea id="campo-estratto" style="min-height:4rem;"></textarea>
+      <label for="campo-contenuto">Contenuto (un paragrafo per riga vuota)</label>
+      <textarea id="campo-contenuto"></textarea>
+      <div class="riga-checkbox">
+        <input type="checkbox" id="campo-pubblicato" />
+        <label for="campo-pubblicato">Pubblicato (visibile a tutti)</label>
+      </div>
+      <div class="riga-pulsanti">
+        <button type="button" class="pure-button pulsante-pillola" id="btn-articolo-annulla">Annulla</button>
+        <button type="button" class="pure-button pulsante-pillola primario" id="btn-articolo-salva">Salva</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyAI0cMoWqHRkhEZTkZiyFDz1axJ99DWZ4I",
+      authDomain: "regolazero.firebaseapp.com",
+      projectId: "regolazero",
+      storageBucket: "regolazero.firebasestorage.app",
+      messagingSenderId: "393442629307",
+      appId: "1:393442629307:web:18e3e493c5f5d450e3bb9e",
+    });
+    var db = firebase.firestore();
+    var collezioneArticoli = db.collection('blog_posts');
+    var autenticato = false;
+    var articoli = [];
+
+    function formattaData(timestamp) {
+      if (!timestamp || !timestamp.toDate) return '';
+      return timestamp.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function disegnaBarraLaterale() {
+      var barra = document.getElementById('barra-laterale');
+      if (articoli.length === 0) {
+        barra.innerHTML = '<p class="vuoto">Nessun articolo ancora.</p>';
+        return;
+      }
+      var gruppi = {};
+      articoli.forEach(function (a) {
+        var cat = a.categoria || 'Generale';
+        if (!gruppi[cat]) gruppi[cat] = [];
+        gruppi[cat].push(a);
+      });
+      var html = '';
+      Object.keys(gruppi).forEach(function (cat) {
+        html += '<h2></h2><ul>' + gruppi[cat].map(function (a) {
+          return '<li><a href="./articolo.html?id=' + encodeURIComponent(a.id) + '"></a></li>';
+        }).join('') + '</ul>';
+      });
+      barra.innerHTML = html;
+      // testo assegnato via textContent per evitare qualunque injection dal titolo/categoria
+      var i = 0;
+      Object.keys(gruppi).forEach(function (cat) {
+        var h2 = barra.querySelectorAll('h2')[i];
+        h2.textContent = cat;
+        var links = barra.querySelectorAll('ul')[i].querySelectorAll('a');
+        gruppi[cat].forEach(function (a, j) { links[j].textContent = a.titolo; });
+        i++;
+      });
+    }
+
+    function disegnaElenco() {
+      var elenco = document.getElementById('elenco-articoli');
+      if (articoli.length === 0) {
+        elenco.innerHTML = '<p class="vuoto">Nessun articolo pubblicato ancora.</p>';
+        return;
+      }
+      elenco.innerHTML = '';
+      articoli.forEach(function (a) {
+        var scheda = document.createElement('a');
+        scheda.className = 'scheda-articolo';
+        scheda.href = './articolo.html?id=' + encodeURIComponent(a.id);
+        scheda.innerHTML = '<span class="categoria"></span><h3></h3><p></p><div class="data"></div>';
+        scheda.querySelector('.categoria').textContent = a.categoria || 'Generale';
+        scheda.querySelector('h3').textContent = a.titolo;
+        scheda.querySelector('p').textContent = a.estratto;
+        scheda.querySelector('.data').textContent = formattaData(a.creato) + (a.pubblicato ? '' : ' — bozza');
+        elenco.appendChild(scheda);
+      });
+    }
+
+    function caricaArticoli() {
+      var query = autenticato ? collezioneArticoli : collezioneArticoli.where('pubblicato', '==', true);
+      query.orderBy('creato', 'desc').get().then(function (snapshot) {
+        articoli = snapshot.docs.map(function (doc) {
+          var dati = doc.data();
+          dati.id = doc.id;
+          return dati;
+        });
+        disegnaBarraLaterale();
+        disegnaElenco();
+      }).catch(function (errore) {
+        console.error('Errore nel caricare gli articoli:', errore);
+        document.getElementById('elenco-articoli').innerHTML = '<p class="vuoto">Errore nel caricamento.</p>';
+        document.getElementById('barra-laterale').innerHTML = '<p class="vuoto">—</p>';
+      });
+    }
+
+    // --- Login/logout ---
+    var overlayLogin = document.getElementById('overlay-login');
+    var btnAccedi = document.getElementById('btn-accedi');
+    var btnEsci = document.getElementById('btn-esci');
+    var btnNuovo = document.getElementById('btn-nuovo');
+
+    firebase.auth().onAuthStateChanged(function (utente) {
+      autenticato = !!utente;
+      btnAccedi.hidden = autenticato;
+      btnEsci.hidden = !autenticato;
+      btnNuovo.hidden = !autenticato;
+      caricaArticoli();
+    });
+
+    btnAccedi.addEventListener('click', function () {
+      document.getElementById('login-errore').style.display = 'none';
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+      overlayLogin.hidden = false;
+    });
+    document.getElementById('btn-login-annulla').addEventListener('click', function () { overlayLogin.hidden = true; });
+    overlayLogin.addEventListener('click', function (e) { if (e.target === overlayLogin) overlayLogin.hidden = true; });
+    document.getElementById('btn-login-entra').addEventListener('click', function () {
+      var email = document.getElementById('login-email').value.trim();
+      var password = document.getElementById('login-password').value;
+      firebase.auth().signInWithEmailAndPassword(email, password).then(function () {
+        overlayLogin.hidden = true;
+      }).catch(function () {
+        var err = document.getElementById('login-errore');
+        err.textContent = 'Accesso non riuscito: email o password errate.';
+        err.style.display = 'block';
+      });
+    });
+    btnEsci.addEventListener('click', function () { firebase.auth().signOut(); });
+
+    // --- Nuovo articolo ---
+    var overlayArticolo = document.getElementById('overlay-articolo');
+    var campoTitolo = document.getElementById('campo-titolo');
+    var campoCategoria = document.getElementById('campo-categoria');
+    var campoEstratto = document.getElementById('campo-estratto');
+    var campoContenuto = document.getElementById('campo-contenuto');
+    var campoPubblicato = document.getElementById('campo-pubblicato');
+
+    btnNuovo.addEventListener('click', function () {
+      document.getElementById('articolo-modale-titolo').textContent = 'Nuovo articolo';
+      campoTitolo.value = '';
+      campoCategoria.value = '';
+      campoEstratto.value = '';
+      campoContenuto.value = '';
+      campoPubblicato.checked = false;
+      overlayArticolo.hidden = false;
+      campoTitolo.focus();
+    });
+    document.getElementById('btn-articolo-annulla').addEventListener('click', function () { overlayArticolo.hidden = true; });
+    overlayArticolo.addEventListener('click', function (e) { if (e.target === overlayArticolo) overlayArticolo.hidden = true; });
+
+    document.getElementById('btn-articolo-salva').addEventListener('click', function () {
+      var titolo = campoTitolo.value.trim();
+      if (!titolo) { campoTitolo.focus(); return; }
+      var btn = this;
+      var dati = {
+        titolo: titolo,
+        categoria: campoCategoria.value.trim() || 'Generale',
+        estratto: campoEstratto.value.trim(),
+        contenuto: campoContenuto.value.trim(),
+        pubblicato: campoPubblicato.checked,
+        creato: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+      btn.disabled = true;
+      collezioneArticoli.add(dati).then(function () {
+        overlayArticolo.hidden = true;
+        btn.disabled = false;
+        caricaArticoli();
+      }).catch(function (errore) {
+        console.error('Errore nel salvare l\'articolo:', errore);
+        alert('Non sono riuscito a salvare l\'articolo. Riprova.');
+        btn.disabled = false;
+      });
+    });
+
+    caricaArticoli();
+  </script>
+</body>
+</html>

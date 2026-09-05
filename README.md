@@ -1,6 +1,7 @@
 # RegolaZero — sito
 
-Sito statico del publisher **RegolaZero**. HTML/CSS/JS puro — nessun
+Sito statico di **RegolaZero**, gruppo di giocatori che crea contenuti per
+giochi di ruolo. HTML/CSS/JS puro — nessun
 framework, nessuna build, nessun `npm install`. Si apre e si modifica come
 qualunque file di testo.
 

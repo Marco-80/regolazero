@@ -84,26 +84,19 @@
       backdrop-filter: blur(4px);
     }
 
-    /* Marker: forma "goccia" alla Google Maps, con l'icona raddrizzata
-       dentro (l'icona in sé non ruota, solo il contenitore ha la forma
-       a goccia). */
+    /* Marker: solo l'icona, senza sfondo/goccia. */
     .marker-badge {
       width: 34px;
       height: 34px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid #f4efe6;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-      overflow: hidden;
+      filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
     }
     .marker-badge img {
       display: block;
-      transform: rotate(45deg);
-      width: 22px;
-      height: 22px;
+      width: 32px;
+      height: 32px;
       object-fit: contain;
     }
 
@@ -139,12 +132,13 @@
       margin-bottom: 0.4rem;
     }
     .popup-punto p { margin: 0; font-size: 0.85rem; color: #cfcfcf; }
-    .popup-punto .popup-elimina {
+    .popup-punto .popup-azione {
+      display: inline-block;
       margin-top: 0.6rem;
       font-size: 0.75rem;
       background: none;
       border: none;
-      color: #d98c8c;
+      color: #9c9c9c;
       cursor: pointer;
       padding: 0;
       text-decoration: underline;
@@ -224,7 +218,11 @@
 
   <div class="barra-alto">
     <a class="pulsante-tondo" href="/" aria-label="Torna alla home" title="Torna alla home">←</a>
-    <button type="button" class="pulsante-pillola" id="btn-esporta">Esporta punti (JSON)</button>
+    <div style="display:flex; gap:0.5rem;">
+      <button type="button" class="pulsante-pillola" id="btn-esporta">Esporta punti (JSON)</button>
+      <button type="button" class="pulsante-pillola" id="btn-accedi">Accedi</button>
+      <button type="button" class="pulsante-pillola" id="btn-esci" hidden>Esci</button>
+    </div>
   </div>
 
   <p class="suggerimento">Tocca la mappa per aggiungere un punto. Tocca un punto esistente per leggerlo.</p>
@@ -232,6 +230,9 @@
   <div class="overlay-modale" id="overlay-modale" hidden>
     <div class="modale" role="dialog" aria-modal="true" aria-labelledby="modale-titolo">
       <h2 id="modale-titolo">Nuovo punto sulla mappa</h2>
+      <div class="riga-pulsanti" id="riga-elimina" hidden>
+        <button type="button" id="btn-elimina" style="background:rgba(217,140,140,0.15); border-color:rgba(217,140,140,0.4); color:#d98c8c;">Elimina questo punto</button>
+      </div>
 
       <label for="campo-categoria">Cosa è questo punto</label>
       <select id="campo-categoria">
@@ -259,9 +260,25 @@
     </div>
   </div>
 
+  <div class="overlay-modale" id="overlay-login" hidden>
+    <div class="modale" role="dialog" aria-modal="true" aria-labelledby="login-titolo">
+      <h2 id="login-titolo">Accedi</h2>
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" autocomplete="username" />
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" autocomplete="current-password" />
+      <p id="login-errore" style="display:none; color:#d98c8c; font-size:0.8rem; margin-top:0.6rem;"></p>
+      <div class="riga-pulsanti">
+        <button type="button" id="btn-login-annulla">Annulla</button>
+        <button type="button" class="primario" id="btn-login-entra">Entra</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script>
     // Config pubblica (non un segreto: la sicurezza di Firebase sta nelle
     // regole del database, non nel nascondere questi valori).
@@ -300,32 +317,52 @@
     // "contiene" lasciando spazio vuoto attorno, questo "copre" tutto lo
     // schermo). Si può solo zoomare DI PIÙ, mai tornare a vedere spazio
     // vuoto attorno alla mappa.
-    var zoomCopertura = map.getBoundsZoom(confini, true);
-    map.setMinZoom(zoomCopertura);
-    map.setView([ALTEZZA_IMG / 2, LARGHEZZA_IMG / 2], zoomCopertura);
-    map.setMaxBounds(confini); // esattamente i bordi dell'immagine, nessun margine
+    // Bug incontrato: chiamare getBoundsZoom subito dopo L.map() a volte
+    // legge ancora una dimensione del container non aggiornata (0 o
+    // stantia, prima che il browser finisca il primo layout) — invalidateSize()
+    // forza Leaflet a rimisurare prima di calcolare. Ricalcolato anche al
+    // resize/cambio orientamento, altrimenti su schermi molto larghi
+    // restano bande vuote ai lati.
+    function impostaZoomCopertura() {
+      map.invalidateSize();
+      var zoomAttuale = map.getZoom();
+      var zoomCopertura = map.getBoundsZoom(confini, true);
+      map.setMinZoom(zoomCopertura);
+      // Ripristina il livello di copertura solo se non c'era già uno zoom
+      // valido impostato dall'utente (prima chiamata, o se lo zoom attuale
+      // è finito sotto il nuovo minimo dopo un resize).
+      if (zoomAttuale == null || isNaN(zoomAttuale) || zoomAttuale < zoomCopertura) {
+        map.setView([ALTEZZA_IMG / 2, LARGHEZZA_IMG / 2], zoomCopertura);
+      }
+      map.setMaxBounds(confini); // esattamente i bordi dell'immagine, nessun margine
+    }
+    impostaZoomCopertura();
+    var timeoutResize;
+    window.addEventListener('resize', function () {
+      clearTimeout(timeoutResize);
+      timeoutResize = setTimeout(impostaZoomCopertura, 200);
+    });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Categorie: icona (da Flaticon, fornite dall'utente) + colore del
-    // bordo del segnalino.
+    // Categorie: icona (da Flaticon, fornite dall'utente).
     var CATEGORIE = {
-      luogo:     { etichetta: 'Luogo',     icona: 'icone/luogo.png',       colore: '#6b7280' },
-      citta:     { etichetta: 'Città',     icona: 'icone/citta.png',       colore: '#2563eb' },
-      villaggio: { etichetta: 'Villaggio', icona: 'icone/villaggio.png',   colore: '#16a34a' },
-      png:       { etichetta: 'PNG',       icona: 'icone/personaggio.png', colore: '#9333ea' },
-      mostro:    { etichetta: 'Mostro',    icona: 'icone/mostro.png',      colore: '#dc2626' },
-      maniero:   { etichetta: 'Maniero',   icona: 'icone/maniero.png',     colore: '#78350f' },
+      luogo:     { etichetta: 'Luogo',     icona: 'icone/luogo.png' },
+      citta:     { etichetta: 'Città',     icona: 'icone/citta.png' },
+      villaggio: { etichetta: 'Villaggio', icona: 'icone/villaggio.png' },
+      png:       { etichetta: 'PNG',       icona: 'icone/personaggio.png' },
+      mostro:    { etichetta: 'Mostro',    icona: 'icone/mostro.png' },
+      maniero:   { etichetta: 'Maniero',   icona: 'icone/maniero.png' },
     };
 
     function creaIcona(categoria) {
       var cfg = CATEGORIE[categoria] || CATEGORIE.luogo;
       return L.divIcon({
         className: '',
-        html: '<div class="marker-badge" style="background:' + cfg.colore + '"><img src="' + cfg.icona + '" alt="" /></div>',
+        html: '<div class="marker-badge"><img src="' + cfg.icona + '" alt="" /></div>',
         iconSize: [34, 34],
-        iconAnchor: [17, 34],
-        popupAnchor: [0, -30],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -14],
       });
     }
 
@@ -421,6 +458,16 @@
         '<h3></h3><p></p>';
       div.querySelector('h3').textContent = punto.nome;
       div.querySelector('p').textContent = punto.descrizione;
+      if (autenticato) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'popup-azione';
+        btn.textContent = 'Modifica';
+        btn.addEventListener('click', function () {
+          apriModaleModifica(punto);
+        });
+        div.appendChild(btn);
+      }
       return div;
     }
 
@@ -431,7 +478,7 @@
           .bindTooltip(punto.nome, {
             permanent: true,
             direction: 'bottom',
-            offset: [0, 2],
+            offset: [0, 12], // icona ora ancorata al centro (v. creaIcona), non più alla punta della goccia
             className: 'etichetta-punto',
           })
           .bindPopup(contenutoPopup(punto))
@@ -439,24 +486,43 @@
       });
     }
 
-    // --- Modale di creazione ---
+    // --- Modale di creazione/modifica ---
     var overlay = document.getElementById('overlay-modale');
+    var modaleTitolo = document.getElementById('modale-titolo');
+    var rigaElimina = document.getElementById('riga-elimina');
     var campoCategoria = document.getElementById('campo-categoria');
     var campoNome = document.getElementById('campo-nome');
     var campoDescrizione = document.getElementById('campo-descrizione');
-    var puntoInAttesa = null; // {lat, lng} del click che ha aperto il modale
+    var puntoInAttesa = null; // {lat, lng} del click che ha aperto il modale (solo creazione)
+    var idInModifica = null; // id del punto in modifica, null se è una creazione
 
     function apriModaleCreazione(latlng) {
+      idInModifica = null;
       puntoInAttesa = latlng;
+      modaleTitolo.textContent = 'Nuovo punto sulla mappa';
+      rigaElimina.hidden = true;
       campoCategoria.value = 'luogo';
       campoNome.value = '';
       campoDescrizione.value = '';
       overlay.hidden = false;
       campoNome.focus();
     }
+    function apriModaleModifica(punto) {
+      idInModifica = punto.id;
+      puntoInAttesa = { lat: punto.lat, lng: punto.lng };
+      modaleTitolo.textContent = 'Modifica punto';
+      rigaElimina.hidden = false;
+      campoCategoria.value = punto.categoria;
+      campoNome.value = punto.nome;
+      campoDescrizione.value = punto.descrizione;
+      overlay.hidden = false;
+      campoNome.focus();
+      map.closePopup();
+    }
     function chiudiModale() {
       overlay.hidden = true;
       puntoInAttesa = null;
+      idInModifica = null;
     }
 
     map.on('click', function (e) {
@@ -482,26 +548,98 @@
         return;
       }
       var btnSalva = this;
-      var nuovoPunto = {
+      var dati = {
         categoria: campoCategoria.value,
         nome: nome,
         descrizione: campoDescrizione.value.trim() || '—',
         lat: puntoInAttesa.lat,
         lng: puntoInAttesa.lng,
-        creato: firebase.firestore.FieldValue.serverTimestamp(),
       };
       btnSalva.disabled = true;
-      collezionePunti.add(nuovoPunto).then(function (docRef) {
-        nuovoPunto.id = docRef.id;
-        punti.push(nuovoPunto);
+      if (idInModifica) {
+        collezionePunti.doc(idInModifica).update(dati).then(function () {
+          var esistente = punti.find(function (p) { return p.id === idInModifica; });
+          if (esistente) Object.assign(esistente, dati);
+          disegnaPunti();
+          chiudiModale();
+          btnSalva.disabled = false;
+        }).catch(function (errore) {
+          console.error('Errore nel modificare il punto su Firestore:', errore);
+          alert('Non sono riuscito a salvare le modifiche. Riprova.');
+          btnSalva.disabled = false;
+        });
+      } else {
+        dati.creato = firebase.firestore.FieldValue.serverTimestamp();
+        collezionePunti.add(dati).then(function (docRef) {
+          dati.id = docRef.id;
+          punti.push(dati);
+          disegnaPunti();
+          chiudiModale();
+          btnSalva.disabled = false;
+        }).catch(function (errore) {
+          console.error('Errore nel salvare il punto su Firestore:', errore);
+          alert('Non sono riuscito a salvare il punto. Riprova.');
+          btnSalva.disabled = false;
+        });
+      }
+    });
+
+    document.getElementById('btn-elimina').addEventListener('click', function () {
+      if (!idInModifica) return;
+      if (!confirm('Eliminare definitivamente questo punto?')) return;
+      var id = idInModifica;
+      collezionePunti.doc(id).delete().then(function () {
+        punti = punti.filter(function (p) { return p.id !== id; });
         disegnaPunti();
         chiudiModale();
-        btnSalva.disabled = false;
       }).catch(function (errore) {
-        console.error('Errore nel salvare il punto su Firestore:', errore);
-        alert('Non sono riuscito a salvare il punto. Riprova.');
-        btnSalva.disabled = false;
+        console.error('Errore nell\'eliminare il punto su Firestore:', errore);
+        alert('Non sono riuscito a eliminare il punto. Riprova.');
       });
+    });
+
+    // --- Login/logout (Firebase Auth): solo per abilitare modifica/
+    // cancellazione dei punti — la creazione resta pubblica come prima.
+    var autenticato = false;
+    var overlayLogin = document.getElementById('overlay-login');
+    var campoLoginEmail = document.getElementById('login-email');
+    var campoLoginPassword = document.getElementById('login-password');
+    var loginErrore = document.getElementById('login-errore');
+    var btnAccedi = document.getElementById('btn-accedi');
+    var btnEsci = document.getElementById('btn-esci');
+
+    firebase.auth().onAuthStateChanged(function (utente) {
+      autenticato = !!utente;
+      btnAccedi.hidden = autenticato;
+      btnEsci.hidden = !autenticato;
+      disegnaPunti(); // per mostrare/nascondere il pulsante "Modifica" nei popup
+    });
+
+    btnAccedi.addEventListener('click', function () {
+      loginErrore.style.display = 'none';
+      campoLoginEmail.value = '';
+      campoLoginPassword.value = '';
+      overlayLogin.hidden = false;
+      campoLoginEmail.focus();
+    });
+    document.getElementById('btn-login-annulla').addEventListener('click', function () {
+      overlayLogin.hidden = true;
+    });
+    overlayLogin.addEventListener('click', function (e) {
+      if (e.target === overlayLogin) overlayLogin.hidden = true;
+    });
+    document.getElementById('btn-login-entra').addEventListener('click', function () {
+      loginErrore.style.display = 'none';
+      firebase.auth().signInWithEmailAndPassword(campoLoginEmail.value.trim(), campoLoginPassword.value)
+        .then(function () {
+          overlayLogin.hidden = true;
+        }).catch(function (errore) {
+          loginErrore.textContent = 'Accesso non riuscito: email o password errate.';
+          loginErrore.style.display = 'block';
+        });
+    });
+    btnEsci.addEventListener('click', function () {
+      firebase.auth().signOut();
     });
 
     // --- Esporta (backup manuale di quello che c'è ora su Firestore) ---
