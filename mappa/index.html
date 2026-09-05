@@ -262,7 +262,9 @@
   <div class="overlay-modale" id="overlay-login" hidden>
     <div class="modale" role="dialog" aria-modal="true" aria-labelledby="login-titolo">
       <h2 id="login-titolo">Accedi</h2>
-      <div class="riga-pulsanti">
+      <!-- Accesso Google disattivato per ora su richiesta dell'utente (05/09):
+           togliere "hidden" da riga e bottone quando il provider Google sarà attivo in Firebase. -->
+      <div class="riga-pulsanti" hidden>
         <button type="button" id="btn-login-google">Accedi con Google</button>
       </div>
       <label for="login-email">Email</label>
@@ -294,6 +296,16 @@
     });
     var db = firebase.firestore();
     var collezionePunti = db.collection('punti');
+
+    // Manutenzione sito (interruttore nel blog, solo admin): copre la
+    // pagina con un avviso se config/sito ha manutenzione:true.
+    db.collection('config').doc('sito').get().then(function (doc) {
+      if (!(doc.exists && doc.data().manutenzione === true)) return;
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#121212;color:#cfcfcf;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;';
+      ov.innerHTML = '<div><p style="font-size:1.15rem;font-weight:600;margin:0 0 .5rem;">Sito in manutenzione</p><p style="color:#9c9c9c;margin:0;">Torniamo online a breve.</p></div>';
+      document.body.appendChild(ov);
+    }).catch(function () {});
   </script>
   <script>
     // Mappa fantasy (non geografica) con Leaflet: CRS.Simple + immagine

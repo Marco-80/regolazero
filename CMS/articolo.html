@@ -186,7 +186,9 @@
   <div class="overlay-modale" id="overlay-login" hidden>
     <div class="modale" role="dialog" aria-modal="true">
       <h2>Accedi</h2>
-      <div class="riga-pulsanti">
+      <!-- Accesso Google disattivato per ora su richiesta dell'utente (05/09):
+           togliere "hidden" da riga e bottone quando il provider Google sarà attivo in Firebase. -->
+      <div class="riga-pulsanti" hidden>
         <button type="button" class="pure-button pulsante-pillola" id="btn-login-google">Accedi con Google</button>
       </div>
       <label for="login-email">Email</label>

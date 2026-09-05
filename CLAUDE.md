@@ -362,21 +362,23 @@ resta lì invariata come riferimento storico, non più la fonte).
   ancora da accorciare** — l'utente ha scelto di farlo lui stesso dal
   sito (login → click sul punto → Modifica), non è stato fatto da
   Claude Code.
-  **Login** (`#btn-accedi`/`#btn-esci`, in alto a destra): Firebase Auth,
-  due metodi — email/password (account creato dall'utente nella console
-  Firebase → Authentication) e **Google** (`signInWithPopup` +
-  `firebase.auth.GoogleAuthProvider()`, aggiunto 05/09). Non è una
-  registrazione pubblica — nessun link "crea account" da nessuna parte,
-  e le regole (sotto) restringono i permessi **a una email specifica**,
-  non a "chiunque sia autenticato": con Google chiunque abbia un
-  account potrebbe altrimenti fare login e ottenere i permessi di
-  modifica. **La email esatta non è scritta qui** (il repo è pubblico) —
-  è nella console Firebase (Authentication → Users, e nelle regole
-  sotto) e la conosce solo l'utente. **Da fare in console Firebase
-  perché Google funzioni**: Authentication → Sign-in method → abilitare
-  Google (serve una "support email"); Authentication → Settings →
-  Authorized domains → aggiungere `regolazero.it` (di default c'è solo
-  `localhost` e il dominio `*.firebaseapp.com`).
+  **Login** (`#btn-accedi`/`#btn-esci`, in alto a destra): Firebase Auth.
+  Il codice supporta due metodi — email/password e **Google**
+  (`signInWithPopup` + `firebase.auth.GoogleAuthProvider()`) — ma il
+  **pulsante "Accedi con Google" è `hidden` dal 05/09** su richiesta
+  dell'utente ("teniamolo disattivato che funzioni il resto"): resta
+  solo email/password. Per riattivare Google: togliere `hidden` dalla
+  `div.riga-pulsanti` che contiene `#btn-login-google` (in
+  `mappa/index.html`, `CMS/index.html`, `CMS/articolo.html`) **e** in
+  console Firebase abilitare il provider Google (Sign-in method, serve
+  una "support email") + aggiungere `regolazero.it` agli Authorized
+  domains.
+  Non è una registrazione pubblica per il login admin — nessun link
+  "crea account". Le regole (sotto) restringono i permessi **a una
+  email specifica** per la mappa, e al **ruolo** per il blog (§6bis) —
+  non a "chiunque sia autenticato". **La email esatta non è scritta
+  qui** (repo pubblico) — sta nella console Firebase e nelle regole, e
+  la conosce solo l'utente.
   **Regole di sicurezza attuali** (con `<EMAIL_ADMIN>` al posto della
   email vera, per non versionarla — v. sopra; da aggiornare qui se
   cambiano, non solo nella console Firebase):
@@ -576,6 +578,46 @@ pannelli) e in `the-mist/index.html` (v. §4).
   servirebbero **Firebase Storage** (prodotto Firebase diverso da
   Firestore, con le sue regole a parte) — **non ancora approvato/
   implementato**, da chiedere esplicitamente se/quando serve davvero.
+
+---
+
+## 6ter. Modalità manutenzione sito
+
+Aggiunta il 05/09. Interruttore **nel blog**, pulsante `#btn-manutenzione`
+in alto (`CMS/index.html`), visibile solo con `ruolo:'admin'`. Scrive
+`config/sito.manutenzione` (bool) su Firestore.
+
+Quando è `true`: `index.html`, `mappa/index.html` e `the-mist/index.html`
+mostrano un **overlay** a schermo intero "Sito in manutenzione" (non
+sostituiscono il DOM — così l'eventuale codice già partito non va in
+errore; l'iframe audio della home viene svuotato per fermare la musica).
+**Il blog (`CMS/`) NON è coperto**: è la "sala di controllo", l'admin
+deve poterci sempre entrare per rimettere il sito online.
+
+Nessun bypass per l'admin sulle pagine coperte: durante la manutenzione
+anche l'admin vede l'overlay su home/mappa/the-mist (se serve lavorarci,
+si disattiva la manutenzione dal blog, si lavora, si riattiva). Scelta
+voluta per tenere il codice semplice — niente check `isAdmin` asincrono
+su ogni pagina.
+
+`the-mist/index.html` era uno stub senza Firebase: gli sono stati
+aggiunti i due `<script>` dell'SDK + `initializeApp` solo per questo
+controllo.
+
+Nota: l'utente ha chiesto "blocca il logo iniziale, non far partire
+l'animazione" nello stesso messaggio del tasto manutenzione — è stato
+interpretato come *effetto della manutenzione* (l'overlay copre logo e
+animazione della home). Se intendeva disattivare **sempre**
+l'animazione d'ingresso, è una modifica a parte da confermare (§4: la
+home non si ritocca senza chiedere).
+
+**Regole di sicurezza**:
+```
+match /config/{docId} {
+  allow read: if true;
+  allow write: if isAdmin();
+}
+```
 
 ---
 

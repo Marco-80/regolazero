@@ -32,5 +32,27 @@
     <p><a href="/CMS/">Visita il blog RegolaZero</a></p>
     <a href="/">&larr; Torna alla home</a>
   </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script>
+    // Solo per la modalità manutenzione (interruttore nel blog, admin):
+    // se config/sito ha manutenzione:true, copre la pagina con un avviso.
+    firebase.initializeApp({
+      apiKey: "AIzaSyAI0cMoWqHRkhEZTkZiyFDz1axJ99DWZ4I",
+      authDomain: "regolazero.firebaseapp.com",
+      projectId: "regolazero",
+      storageBucket: "regolazero.firebasestorage.app",
+      messagingSenderId: "393442629307",
+      appId: "1:393442629307:web:18e3e493c5f5d450e3bb9e",
+    });
+    firebase.firestore().collection('config').doc('sito').get().then(function (doc) {
+      if (!(doc.exists && doc.data().manutenzione === true)) return;
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#121212;color:#cfcfcf;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;';
+      ov.innerHTML = '<div><p style="font-size:1.15rem;font-weight:600;margin:0 0 .5rem;">Sito in manutenzione</p><p style="color:#9c9c9c;margin:0;">Torniamo online a breve.</p></div>';
+      document.body.appendChild(ov);
+    }).catch(function () {});
+  </script>
 </body>
 </html>

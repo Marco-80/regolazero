@@ -222,6 +222,7 @@
     <span class="titolo-blog">Blog</span>
     <div class="azioni">
       <span class="etichetta-ruolo" id="etichetta-ruolo" hidden></span>
+      <button type="button" class="pure-button pulsante-pillola" id="btn-manutenzione" hidden>Manutenzione: …</button>
       <button type="button" class="pure-button pulsante-pillola" id="btn-utenti" hidden>Gestione utenti</button>
       <button type="button" class="pure-button pulsante-pillola" id="btn-accedi">Accedi</button>
       <button type="button" class="pure-button pulsante-pillola" id="btn-esci" hidden>Esci</button>
@@ -245,7 +246,9 @@
   <div class="overlay-modale" id="overlay-login" hidden>
     <div class="modale" role="dialog" aria-modal="true">
       <h2>Accedi</h2>
-      <div class="riga-pulsanti">
+      <!-- Accesso Google disattivato per ora su richiesta dell'utente (05/09):
+           togliere "hidden" da riga e bottone quando il provider Google sarà attivo in Firebase. -->
+      <div class="riga-pulsanti" hidden>
         <button type="button" class="pure-button pulsante-pillola" id="btn-login-google">Accedi con Google</button>
       </div>
       <label for="login-email">Email</label>
@@ -462,18 +465,50 @@
     var btnEsci = document.getElementById('btn-esci');
     var btnNuovo = document.getElementById('btn-nuovo');
     var btnUtenti = document.getElementById('btn-utenti');
+    var btnManutenzione = document.getElementById('btn-manutenzione');
     var etichettaRuolo = document.getElementById('etichetta-ruolo');
+    var rifConfigSito = db.collection('config').doc('sito');
+    var manutenzioneAttiva = false;
 
     var NOMI_RUOLO = { ospite: 'Ospite', autore: 'Autore', redattore: 'Redattore', admin: 'Admin' };
+
+    function aggiornaTestoManutenzione() {
+      btnManutenzione.textContent = 'Manutenzione: ' + (manutenzioneAttiva ? 'ON' : 'OFF');
+    }
 
     function aggiornaUI() {
       btnAccedi.hidden = autenticato;
       btnEsci.hidden = !autenticato;
       btnNuovo.hidden = !puoScrivere();
       btnUtenti.hidden = !eAdmin();
+      btnManutenzione.hidden = !eAdmin();
       etichettaRuolo.hidden = !autenticato;
       etichettaRuolo.textContent = ruoloUtente ? NOMI_RUOLO[ruoloUtente] : '';
+      aggiornaTestoManutenzione();
+      if (eAdmin()) {
+        rifConfigSito.get().then(function (doc) {
+          manutenzioneAttiva = doc.exists && doc.data().manutenzione === true;
+          aggiornaTestoManutenzione();
+        }).catch(function () {});
+      }
     }
+
+    btnManutenzione.addEventListener('click', function () {
+      var nuovo = !manutenzioneAttiva;
+      if (!confirm(nuovo
+        ? 'Attivare la manutenzione? I visitatori vedranno un avviso al posto del sito (la home, la mappa e la pagina The Mist). Il blog resta accessibile a te.'
+        : 'Disattivare la manutenzione e rimettere il sito online?')) return;
+      btnManutenzione.disabled = true;
+      rifConfigSito.set({ manutenzione: nuovo }, { merge: true }).then(function () {
+        manutenzioneAttiva = nuovo;
+        aggiornaTestoManutenzione();
+        btnManutenzione.disabled = false;
+      }).catch(function (errore) {
+        console.error('Errore manutenzione:', errore);
+        alert('Non sono riuscito a cambiare lo stato di manutenzione. Riprova.');
+        btnManutenzione.disabled = false;
+      });
+    });
 
     firebase.auth().onAuthStateChanged(function (utente) {
       autenticato = !!utente;

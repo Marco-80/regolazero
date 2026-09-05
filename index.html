@@ -360,6 +360,23 @@
   </script>
 
   <script>
+    // Manutenzione sito: se il documento config/sito ha manutenzione:true
+    // (interruttore nel blog, solo admin), copre la pagina con un avviso.
+    // Overlay sopra il contenuto, non sostituzione del DOM: così l'eventuale
+    // codice già partito (animazione, ecc.) non genera errori — l'iframe
+    // audio invece va svuotato per fermare la musica dietro l'avviso.
+    firebase.firestore().collection('config').doc('sito').get().then(function (doc) {
+      if (!(doc.exists && doc.data().manutenzione === true)) return;
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#121212;color:#cfcfcf;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;';
+      ov.innerHTML = '<div><p style="font-size:1.15rem;font-weight:600;margin:0 0 .5rem;">Sito in manutenzione</p><p style="color:#9c9c9c;margin:0;">Torniamo online a breve.</p></div>';
+      document.body.appendChild(ov);
+      var ifr = document.querySelector('#audio-sottofondo iframe');
+      if (ifr) ifr.src = 'about:blank';
+    }).catch(function () {});
+  </script>
+
+  <script>
     // Form newsletter: salva l'email su Firestore (collezione
     // "newsletter"). Le regole del database impediscono di leggere la
     // lista delle email dal client (solo creazione, mai lettura) — v.
