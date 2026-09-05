@@ -206,6 +206,9 @@
   <div class="overlay-modale" id="overlay-login" hidden>
     <div class="modale" role="dialog" aria-modal="true">
       <h2>Accedi</h2>
+      <div class="riga-pulsanti">
+        <button type="button" class="pure-button pulsante-pillola" id="btn-login-google">Accedi con Google</button>
+      </div>
       <label for="login-email">Email</label>
       <input type="text" id="login-email" autocomplete="username" />
       <label for="login-password">Password</label>
@@ -313,12 +316,22 @@
     }
 
     function caricaArticoli() {
+      // Niente .orderBy() qui apposta: combinato con .where('pubblicato', ...)
+      // richiederebbe un indice composito da creare a mano nella console
+      // Firestore (bug/comportamento incontrato il 05/09). L'ordinamento
+      // per data si fa lato client dopo il fetch, su un elenco comunque
+      // piccolo (è un mini blog).
       var query = autenticato ? collezioneArticoli : collezioneArticoli.where('pubblicato', '==', true);
-      query.orderBy('creato', 'desc').get().then(function (snapshot) {
+      query.get().then(function (snapshot) {
         articoli = snapshot.docs.map(function (doc) {
           var dati = doc.data();
           dati.id = doc.id;
           return dati;
+        });
+        articoli.sort(function (a, b) {
+          var ta = a.creato && a.creato.toMillis ? a.creato.toMillis() : 0;
+          var tb = b.creato && b.creato.toMillis ? b.creato.toMillis() : 0;
+          return tb - ta;
         });
         disegnaBarraLaterale();
         disegnaElenco();
@@ -359,6 +372,16 @@
       }).catch(function () {
         var err = document.getElementById('login-errore');
         err.textContent = 'Accesso non riuscito: email o password errate.';
+        err.style.display = 'block';
+      });
+    });
+    document.getElementById('btn-login-google').addEventListener('click', function () {
+      firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function () {
+        overlayLogin.hidden = true;
+      }).catch(function (errore) {
+        console.error('Errore accesso Google:', errore);
+        var err = document.getElementById('login-errore');
+        err.textContent = 'Accesso con Google non riuscito. Riprova.';
         err.style.display = 'block';
       });
     });

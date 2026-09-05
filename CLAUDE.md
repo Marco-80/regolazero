@@ -354,19 +354,32 @@ resta lì invariata come riferimento storico, non più la fonte).
   precompilato, con in più un pulsante "Elimina questo punto".
   I 9 luoghi originali (nomi presi dal vecchio prototipo) sono stati
   migrati su Firestore il 05/09; il file `mappa/punti.json` resta solo
-  come backup, **non è più letto dalla pagina**. Il pulsante "Esporta
-  punti (JSON)" in alto a destra scarica un backup manuale di quello
-  che c'è in quel momento su Firestore. **Il testo segnaposto "(Testo
+  come backup storico, **non è più letto dalla pagina**. Il pulsante
+  "Esporta punti (JSON)" (che scaricava un backup manuale) è stato
+  tolto il 05/09 su richiesta esplicita — non più necessario ora che
+  Firestore è la fonte viva. **Il testo segnaposto "(Testo
   segnaposto, da sostituire col lore definitivo.)" su questi 9 punti è
   ancora da accorciare** — l'utente ha scelto di farlo lui stesso dal
   sito (login → click sul punto → Modifica), non è stato fatto da
   Claude Code.
-  **Login** (`#btn-accedi`/`#btn-esci`, in alto a destra): Firebase Auth
-  email/password, un solo account (quello dell'utente, creato da lui
-  nella console Firebase → Authentication). Non è una registrazione
-  pubblica — nessun link "crea account" da nessuna parte.
-  **Regole di sicurezza attuali** (da aggiornare qui se cambiano —
-  tenerne traccia, non solo nella console Firebase):
+  **Login** (`#btn-accedi`/`#btn-esci`, in alto a destra): Firebase Auth,
+  due metodi — email/password (account creato dall'utente nella console
+  Firebase → Authentication) e **Google** (`signInWithPopup` +
+  `firebase.auth.GoogleAuthProvider()`, aggiunto 05/09). Non è una
+  registrazione pubblica — nessun link "crea account" da nessuna parte,
+  e le regole (sotto) restringono i permessi **a una email specifica**,
+  non a "chiunque sia autenticato": con Google chiunque abbia un
+  account potrebbe altrimenti fare login e ottenere i permessi di
+  modifica. **La email esatta non è scritta qui** (il repo è pubblico) —
+  è nella console Firebase (Authentication → Users, e nelle regole
+  sotto) e la conosce solo l'utente. **Da fare in console Firebase
+  perché Google funzioni**: Authentication → Sign-in method → abilitare
+  Google (serve una "support email"); Authentication → Settings →
+  Authorized domains → aggiungere `regolazero.it` (di default c'è solo
+  `localhost` e il dominio `*.firebaseapp.com`).
+  **Regole di sicurezza attuali** (con `<EMAIL_ADMIN>` al posto della
+  email vera, per non versionarla — v. sopra; da aggiornare qui se
+  cambiano, non solo nella console Firebase):
   ```
   match /punti/{puntoId} {
     allow read: if true;
@@ -378,7 +391,7 @@ resta lì invariata come riferimento storico, non più la fonte).
       && request.resource.data.descrizione.size() <= 500
       && request.resource.data.lat is number
       && request.resource.data.lng is number;
-    allow update: if request.auth != null
+    allow update: if request.auth.token.email == '<EMAIL_ADMIN>'
       && request.resource.data.categoria in ['luogo','citta','villaggio','png','mostro','maniero']
       && request.resource.data.nome is string
       && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 80
@@ -386,7 +399,7 @@ resta lì invariata come riferimento storico, non più la fonte).
       && request.resource.data.descrizione.size() <= 500
       && request.resource.data.lat is number
       && request.resource.data.lng is number;
-    allow delete: if request.auth != null;
+    allow delete: if request.auth.token.email == '<EMAIL_ADMIN>';
   }
   ```
 - **Generatori casuali — NON usare le tabelle del manuale di The Mist**:
@@ -440,23 +453,24 @@ pannelli) e in `the-mist/index.html` (v. §4).
   autenticati vedono solo gli articoli con `pubblicato: true`; l'utente
   loggato vede anche le bozze (utile per scrivere in anticipo senza
   pubblicare subito).
-  **Regole di sicurezza**:
+  **Regole di sicurezza** (`<EMAIL_ADMIN>` = email vera, v. nota in §6
+  sul perché non è scritta qui):
   ```
   match /blog_posts/{postId} {
-    allow read: if resource.data.pubblicato == true || request.auth != null;
-    allow create: if request.auth != null
+    allow read: if resource.data.pubblicato == true || request.auth.token.email == '<EMAIL_ADMIN>';
+    allow create: if request.auth.token.email == '<EMAIL_ADMIN>'
       && request.resource.data.titolo is string && request.resource.data.titolo.size() > 0 && request.resource.data.titolo.size() <= 140
       && request.resource.data.estratto is string && request.resource.data.estratto.size() <= 300
       && request.resource.data.contenuto is string && request.resource.data.contenuto.size() <= 20000
       && request.resource.data.categoria is string && request.resource.data.categoria.size() <= 60
       && request.resource.data.pubblicato is bool;
-    allow update: if request.auth != null
+    allow update: if request.auth.token.email == '<EMAIL_ADMIN>'
       && request.resource.data.titolo is string && request.resource.data.titolo.size() > 0 && request.resource.data.titolo.size() <= 140
       && request.resource.data.estratto is string && request.resource.data.estratto.size() <= 300
       && request.resource.data.contenuto is string && request.resource.data.contenuto.size() <= 20000
       && request.resource.data.categoria is string && request.resource.data.categoria.size() <= 60
       && request.resource.data.pubblicato is bool;
-    allow delete: if request.auth != null;
+    allow delete: if request.auth.token.email == '<EMAIL_ADMIN>';
   }
   ```
 
