@@ -2,34 +2,522 @@
 <html lang="it">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>RegolaZero — Mappa interattiva e generatori</title>
+  <title>RegolaZero — Mappa interattiva</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <style>
-    body {
+    html, body {
       margin: 0;
-      min-height: 100svh;
-      display: grid;
-      place-items: center;
+      height: 100%;
+      overflow: hidden;
       background: #121212;
       color: #cfcfcf;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    #map {
+      position: fixed;
+      inset: 0;
+      background: #121212;
+    }
+    /* Sfondo scuro coerente col resto del sito anche fuori dai limiti
+       dell'immagine (Leaflet di default userebbe un grigio chiaro). */
+    .leaflet-container {
+      background: #121212;
+    }
+
+    .barra-alto {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 0.75rem;
+      pointer-events: none;
+      gap: 0.5rem;
+    }
+    .barra-alto > * { pointer-events: auto; }
+    .pulsante-tondo {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: rgba(18, 18, 18, 0.85);
+      color: #cfcfcf;
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      font-size: 1.1rem;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+    .pulsante-tondo:hover { background: rgba(255, 255, 255, 0.12); }
+    .pulsante-pillola {
+      border-radius: 999px;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: rgba(18, 18, 18, 0.85);
+      color: #cfcfcf;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+    .pulsante-pillola:hover { background: rgba(255, 255, 255, 0.12); }
+
+    .suggerimento {
+      position: fixed;
+      bottom: 0.9rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 500;
+      background: rgba(18, 18, 18, 0.85);
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      border-radius: 999px;
+      padding: 0.5rem 1rem;
+      font-size: 0.78rem;
+      color: #9c9c9c;
       text-align: center;
-      padding: 2rem 1.25rem;
+      max-width: 90vw;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Marker: forma "goccia" alla Google Maps, con l'icona raddrizzata
+       dentro (l'icona in sé non ruota, solo il contenitore ha la forma
+       a goccia). */
+    .marker-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #f4efe6;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .marker-badge img {
+      display: block;
+      transform: rotate(45deg);
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+    }
+
+    /* Popup di lettura (click su un punto esistente): stile scuro coerente. */
+    .leaflet-popup-content-wrapper {
+      background: #1c1c1c;
+      color: #cfcfcf;
+      border-radius: 10px;
+    }
+    .leaflet-popup-tip { background: #1c1c1c; }
+
+    /* Etichetta col nome, sempre visibile sotto il segnalino (non solo
+       nel popup al click). */
+    .etichetta-punto {
+      background: rgba(18, 18, 18, 0.8);
+      color: #f4efe6;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      border-radius: 5px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: none;
+    }
+    .etichetta-punto::before { display: none; } /* niente freccetta di Leaflet */
+    .popup-punto h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+    .popup-punto .popup-categoria {
+      display: inline-block;
+      font-size: 0.7rem;
+      color: #9c9c9c;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+    .popup-punto p { margin: 0; font-size: 0.85rem; color: #cfcfcf; }
+    .popup-punto .popup-elimina {
+      margin-top: 0.6rem;
+      font-size: 0.75rem;
+      background: none;
+      border: none;
+      color: #d98c8c;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    /* Modale di creazione punto. */
+    .overlay-modale {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.55);
+      display: grid;
+      place-items: center;
+      padding: 1rem;
       box-sizing: border-box;
     }
-    img { width: min(70vw, 20rem); height: auto; }
-    h1 { font-size: 1.2rem; font-weight: 600; margin: 2rem 0 0.5rem; }
-    p { color: #9c9c9c; margin: 0 0 2rem; }
-    a { color: #cfcfcf; }
+    .overlay-modale[hidden] { display: none; }
+    .modale {
+      width: min(26rem, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #1c1c1c;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      border-radius: 14px;
+      padding: 1.25rem;
+      box-sizing: border-box;
+    }
+    .modale h2 { margin: 0 0 1rem; font-size: 1.05rem; }
+    .modale label {
+      display: block;
+      font-size: 0.8rem;
+      color: #9c9c9c;
+      margin: 0.9rem 0 0.3rem;
+    }
+    .modale select,
+    .modale input[type="text"],
+    .modale textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.6rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: #e9e7e2;
+      color: #1a1a1a;
+      font-size: 1rem; /* >=16px: evita lo zoom automatico di iOS al focus */
+      font-family: inherit;
+    }
+    .modale textarea { min-height: 5rem; resize: vertical; }
+    .riga-pulsanti {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1.1rem;
+      flex-wrap: wrap;
+    }
+    .riga-pulsanti button {
+      flex: 1 1 auto;
+      padding: 0.65rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: rgba(255, 255, 255, 0.06);
+      color: #cfcfcf;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .riga-pulsanti button:hover { background: rgba(255, 255, 255, 0.14); }
+    .riga-pulsanti button.primario {
+      background: #e9e7e2;
+      color: #1a1a1a;
+      font-weight: 600;
+      border-color: transparent;
+    }
+    .riga-pulsanti button.primario:hover { background: #fff; }
   </style>
 </head>
 <body>
-  <div>
-    <img src="/images/site/logo-regolazero.png" alt="RegolaZero" />
-    <h1>Mappa interattiva e generatori</h1>
-    <p>Pagina in arrivo.</p>
-    <a href="/">&larr; Torna alla home</a>
+  <div id="map"></div>
+
+  <div class="barra-alto">
+    <a class="pulsante-tondo" href="/" aria-label="Torna alla home" title="Torna alla home">←</a>
+    <button type="button" class="pulsante-pillola" id="btn-esporta">Esporta punti (JSON)</button>
   </div>
+
+  <p class="suggerimento">Tocca la mappa per aggiungere un punto. Tocca un punto esistente per leggerlo.</p>
+
+  <div class="overlay-modale" id="overlay-modale" hidden>
+    <div class="modale" role="dialog" aria-modal="true" aria-labelledby="modale-titolo">
+      <h2 id="modale-titolo">Nuovo punto sulla mappa</h2>
+
+      <label for="campo-categoria">Cosa è questo punto</label>
+      <select id="campo-categoria">
+        <option value="luogo">Luogo</option>
+        <option value="citta">Città</option>
+        <option value="villaggio">Villaggio</option>
+        <option value="png">PNG</option>
+        <option value="mostro">Mostro</option>
+        <option value="maniero">Maniero</option>
+      </select>
+
+      <label for="campo-nome">Nome</label>
+      <input type="text" id="campo-nome" placeholder="Nome del luogo/personaggio..." />
+
+      <label for="campo-descrizione">Descrizione</label>
+      <textarea id="campo-descrizione" placeholder="Una breve descrizione..."></textarea>
+
+      <div class="riga-pulsanti">
+        <button type="button" id="btn-genera">🎲 Genera automaticamente</button>
+      </div>
+      <div class="riga-pulsanti">
+        <button type="button" id="btn-annulla">Annulla</button>
+        <button type="button" class="primario" id="btn-salva">Salva</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script>
+    // Config pubblica (non un segreto: la sicurezza di Firebase sta nelle
+    // regole del database, non nel nascondere questi valori).
+    firebase.initializeApp({
+      apiKey: "AIzaSyAI0cMoWqHRkhEZTkZiyFDz1axJ99DWZ4I",
+      authDomain: "regolazero.firebaseapp.com",
+      projectId: "regolazero",
+      storageBucket: "regolazero.firebasestorage.app",
+      messagingSenderId: "393442629307",
+      appId: "1:393442629307:web:18e3e493c5f5d450e3bb9e",
+    });
+    var db = firebase.firestore();
+    var collezionePunti = db.collection('punti');
+  </script>
+  <script>
+    // Mappa fantasy (non geografica) con Leaflet: CRS.Simple + immagine
+    // come "tile" unico, tramite imageOverlay. Comportamento pan/zoom
+    // touch e mouse è quello di default di Leaflet, che è già il
+    // comportamento "alla Google Maps" richiesto, su mobile e desktop.
+    var LARGHEZZA_IMG = 641;
+    var ALTEZZA_IMG = 920;
+
+    var map = L.map('map', {
+      crs: L.CRS.Simple,
+      maxZoom: 3,
+      zoomSnap: 0.25,
+      zoomControl: false, // niente controllo di default in alto a sinistra: se ne aggiunge uno solo, sotto
+      attributionControl: false,
+      maxBoundsViscosity: 1, // muro rigido: non si esce mai dalla mappa
+    });
+    var confini = [[0, 0], [ALTEZZA_IMG, LARGHEZZA_IMG]];
+    L.imageOverlay('img/braenmore.jpg', confini).addTo(map);
+
+    // Zoom minimo = quello che fa RIEMPIRE tutto lo schermo con la mappa
+    // (getBoundsZoom con inside:true, l'opposto di fitBounds — quello
+    // "contiene" lasciando spazio vuoto attorno, questo "copre" tutto lo
+    // schermo). Si può solo zoomare DI PIÙ, mai tornare a vedere spazio
+    // vuoto attorno alla mappa.
+    var zoomCopertura = map.getBoundsZoom(confini, true);
+    map.setMinZoom(zoomCopertura);
+    map.setView([ALTEZZA_IMG / 2, LARGHEZZA_IMG / 2], zoomCopertura);
+    map.setMaxBounds(confini); // esattamente i bordi dell'immagine, nessun margine
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Categorie: icona (da Flaticon, fornite dall'utente) + colore del
+    // bordo del segnalino.
+    var CATEGORIE = {
+      luogo:     { etichetta: 'Luogo',     icona: 'icone/luogo.png',       colore: '#6b7280' },
+      citta:     { etichetta: 'Città',     icona: 'icone/citta.png',       colore: '#2563eb' },
+      villaggio: { etichetta: 'Villaggio', icona: 'icone/villaggio.png',   colore: '#16a34a' },
+      png:       { etichetta: 'PNG',       icona: 'icone/personaggio.png', colore: '#9333ea' },
+      mostro:    { etichetta: 'Mostro',    icona: 'icone/mostro.png',      colore: '#dc2626' },
+      maniero:   { etichetta: 'Maniero',   icona: 'icone/maniero.png',     colore: '#78350f' },
+    };
+
+    function creaIcona(categoria) {
+      var cfg = CATEGORIE[categoria] || CATEGORIE.luogo;
+      return L.divIcon({
+        className: '',
+        html: '<div class="marker-badge" style="background:' + cfg.colore + '"><img src="' + cfg.icona + '" alt="" /></div>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -30],
+      });
+    }
+
+    // Generatore automatico: tabelle semplici per categoria, testo di
+    // fantasia originale (non tratto dal manuale di The Mist).
+    var GENERATORE = {
+      luogo: {
+        prefissi: ['Alto', 'Basso', 'Vecchio', 'Nuovo', 'Grigio', 'Nero', 'Perduto', 'Sacro'],
+        nomi: ['Varn', 'Kaldor', 'Sethmoor', 'Draven', 'Orlath', 'Fenrik', 'Vaelis'],
+        descrizioni: [
+          'Un luogo di cui si parla poco, e sempre a bassa voce.',
+          'Segnato sulle mappe più vecchie con un simbolo che nessuno sa più leggere.',
+          'I viandanti lo evitano quando possono, senza saper spiegare perché.',
+        ],
+      },
+      citta: {
+        prefissi: ['Porto', 'Alto', 'Nuovo', 'Grande'],
+        nomi: ['Cadenmoor', 'Vareth', 'Solmyr', 'Dunrath'],
+        descrizioni: [
+          'Le sue mura hanno visto più assedi di quanti gli abitanti vogliano ricordare.',
+          'Un crocevia di mercanti, spie e chi cerca di non farsi trovare.',
+        ],
+      },
+      villaggio: {
+        prefissi: ['Pozzo', 'Guado', 'Fonte', 'Bosco'],
+        nomi: ['Nero', 'Grigio', 'Sommerso', 'Muto'],
+        descrizioni: [
+          'Poche case, un pozzo, e una storia che nessuno racconta agli estranei.',
+          'Vive di quel poco che la terra intorno concede.',
+        ],
+      },
+      png: {
+        nomi: ['Corvin Alaric', 'Mira Sette-Ossa', 'Padre Ulveth', 'Sera la Muta', 'Gann Occhiogrigio'],
+        descrizioni: [
+          'Parla poco, e quando lo fa conviene ascoltare.',
+          'Porta un debito che non ha ancora saldato, e non con i soldi.',
+        ],
+      },
+      mostro: {
+        nomi: ['Il Divoratore di Nebbia', 'Sette-Zampe', 'La Vedova Pallida', 'Il Senza-Volto'],
+        descrizioni: [
+          "Nessuno che l'abbia visto da vicino è tornato a descriverlo per intero.",
+          'Si muove solo quando la nebbia è più fitta.',
+        ],
+      },
+      maniero: {
+        prefissi: ['Castel', 'Forte', 'Torre di', 'Rocca'],
+        nomi: ['Vaelmoor', 'Drenneth', 'Corvenna', 'Aschen'],
+        descrizioni: [
+          'Disabitato da generazioni, o almeno così si dice.',
+          'Le luci alle finestre non hanno una spiegazione che qualcuno abbia mai verificato di persona.',
+        ],
+      },
+    };
+
+    function scegli(lista) {
+      return lista[Math.floor(Math.random() * lista.length)];
+    }
+
+    function generaCasuale(categoria) {
+      var g = GENERATORE[categoria] || GENERATORE.luogo;
+      var nome = g.prefissi ? (scegli(g.prefissi) + ' ' + scegli(g.nomi)) : scegli(g.nomi);
+      return { nome: nome, descrizione: scegli(g.descrizioni) };
+    }
+
+    // --- Dati: collezione "punti" su Firestore, pubblica in lettura per
+    // tutti (il salvataggio è automatico e condiviso, non serve più
+    // l'export manuale). Le regole del database impediscono di scrivere
+    // punti fuori schema e non permettono modifiche/cancellazioni dal
+    // client (v. CLAUDE.md per il testo delle regole).
+    var punti = [];
+    var layerPunti = L.layerGroup().addTo(map);
+
+    function caricaPunti() {
+      collezionePunti.get().then(function (snapshot) {
+        punti = snapshot.docs.map(function (doc) {
+          var dati = doc.data();
+          dati.id = doc.id;
+          return dati;
+        });
+        disegnaPunti();
+      }).catch(function (errore) {
+        console.error('Errore nel caricare i punti da Firestore:', errore);
+      });
+    }
+
+    function contenutoPopup(punto) {
+      var cfg = CATEGORIE[punto.categoria] || CATEGORIE.luogo;
+      var div = document.createElement('div');
+      div.className = 'popup-punto';
+      div.innerHTML =
+        '<span class="popup-categoria">' + cfg.etichetta + '</span>' +
+        '<h3></h3><p></p>';
+      div.querySelector('h3').textContent = punto.nome;
+      div.querySelector('p').textContent = punto.descrizione;
+      return div;
+    }
+
+    function disegnaPunti() {
+      layerPunti.clearLayers();
+      punti.forEach(function (punto) {
+        L.marker([punto.lat, punto.lng], { icon: creaIcona(punto.categoria) })
+          .bindTooltip(punto.nome, {
+            permanent: true,
+            direction: 'bottom',
+            offset: [0, 2],
+            className: 'etichetta-punto',
+          })
+          .bindPopup(contenutoPopup(punto))
+          .addTo(layerPunti);
+      });
+    }
+
+    // --- Modale di creazione ---
+    var overlay = document.getElementById('overlay-modale');
+    var campoCategoria = document.getElementById('campo-categoria');
+    var campoNome = document.getElementById('campo-nome');
+    var campoDescrizione = document.getElementById('campo-descrizione');
+    var puntoInAttesa = null; // {lat, lng} del click che ha aperto il modale
+
+    function apriModaleCreazione(latlng) {
+      puntoInAttesa = latlng;
+      campoCategoria.value = 'luogo';
+      campoNome.value = '';
+      campoDescrizione.value = '';
+      overlay.hidden = false;
+      campoNome.focus();
+    }
+    function chiudiModale() {
+      overlay.hidden = true;
+      puntoInAttesa = null;
+    }
+
+    map.on('click', function (e) {
+      apriModaleCreazione(e.latlng);
+    });
+
+    document.getElementById('btn-annulla').addEventListener('click', chiudiModale);
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) chiudiModale();
+    });
+
+    document.getElementById('btn-genera').addEventListener('click', function () {
+      var generato = generaCasuale(campoCategoria.value);
+      campoNome.value = generato.nome;
+      campoDescrizione.value = generato.descrizione;
+    });
+
+    document.getElementById('btn-salva').addEventListener('click', function () {
+      if (!puntoInAttesa) return;
+      var nome = campoNome.value.trim();
+      if (!nome) {
+        campoNome.focus();
+        return;
+      }
+      var btnSalva = this;
+      var nuovoPunto = {
+        categoria: campoCategoria.value,
+        nome: nome,
+        descrizione: campoDescrizione.value.trim() || '—',
+        lat: puntoInAttesa.lat,
+        lng: puntoInAttesa.lng,
+        creato: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+      btnSalva.disabled = true;
+      collezionePunti.add(nuovoPunto).then(function (docRef) {
+        nuovoPunto.id = docRef.id;
+        punti.push(nuovoPunto);
+        disegnaPunti();
+        chiudiModale();
+        btnSalva.disabled = false;
+      }).catch(function (errore) {
+        console.error('Errore nel salvare il punto su Firestore:', errore);
+        alert('Non sono riuscito a salvare il punto. Riprova.');
+        btnSalva.disabled = false;
+      });
+    });
+
+    // --- Esporta (backup manuale di quello che c'è ora su Firestore) ---
+    document.getElementById('btn-esporta').addEventListener('click', function () {
+      var blob = new Blob([JSON.stringify(punti, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'punti.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    caricaPunti();
+  </script>
 </body>
 </html>

@@ -1,0 +1,11 @@
+[
+  { "id": "seed-1", "categoria": "luogo", "nome": "Frost Lands", "descrizione": "Le terre del gelo, ai margini settentrionali del Braenmore. Poco cartografate oltre questo punto. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 818.8, "lng": 288.45 },
+  { "id": "seed-2", "categoria": "luogo", "nome": "Fallen Kingdom", "descrizione": "Un regno caduto, di cui restano solo rovine e voci di chi vi si è perso. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 607.2, "lng": 205.12 },
+  { "id": "seed-3", "categoria": "villaggio", "nome": "Cadmornagh", "descrizione": "Insediamento noto lungo le rotte che attraversano le montagne centrali. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 717.6, "lng": 333.32 },
+  { "id": "seed-4", "categoria": "luogo", "nome": "The Waste", "descrizione": "Da qui in poi le mappe smettono di essere affidabili. \"Here begin the Waste\", dice la scritta sull'originale. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 414.0, "lng": 371.78 },
+  { "id": "seed-5", "categoria": "luogo", "nome": "Ghoul Valley", "descrizione": "Una valle il cui nome basta a scoraggiare la maggior parte dei viandanti. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 368.0, "lng": 288.45 },
+  { "id": "seed-6", "categoria": "citta", "nome": "Dun-Tara", "descrizione": "Affacciata sul golfo omonimo, a sud-ovest delle terre conosciute. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 294.4, "lng": 173.07 },
+  { "id": "seed-7", "categoria": "luogo", "nome": "Zarath", "descrizione": "Un nome che ricorre nei racconti di chi ha attraversato la Waste e ne è tornato. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 294.4, "lng": 397.42 },
+  { "id": "seed-8", "categoria": "luogo", "nome": "Stone Serpent", "descrizione": "Una formazione — o una creatura — che dà il nome a un intero tratto di costa. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 331.2, "lng": 487.16 },
+  { "id": "seed-9", "categoria": "luogo", "nome": "The Emberveil Empire", "descrizione": "Ciò che resta di un impero, a sud, oltre le Randays Mountains. (Testo segnaposto, da sostituire col lore definitivo.)", "lat": 165.6, "lng": 384.6 }
+]

@@ -34,6 +34,17 @@ nessuna forma — Identity/Git Gateway/hosting), Strapi/Payload/Ghost/
 WordPress, Bootstrap o jQuery senza che sia l'utente a richiederlo di
 nuovo direttamente** — è già stato deciso di no, più volte.
 
+**Eccezione decisa il 05/09: Firebase (Firestore)** è l'unico backend
+approvato, per due usi precisi — salvataggio punti della mappa (§4/§6) e
+iscrizioni newsletter (§4). Caricato via CDN (`firebase-app-compat.js` +
+`firebase-firestore-compat.js`), nessun SDK da installare, coerente con
+"niente build". La `firebaseConfig` (apiKey ecc.) **è pensata per stare
+in chiaro nel codice pubblico** — a differenza di un token GitHub, non è
+un segreto: la sicurezza sta tutta nelle **regole di Firestore** (v. §4).
+Non usare Firebase per altro (auth, hosting, storage...) senza che
+l'utente lo richieda di nuovo esplicitamente — resta un'eccezione mirata,
+non una porta aperta a "tanto ormai ce l'abbiamo".
+
 ---
 
 ## 2. Infrastruttura già pronta — NON toccare/ricreare senza motivo
@@ -69,13 +80,22 @@ REGOLAZERO/
 ├── .gitignore
 ├── CNAME                       riga singola: regolazero.it
 ├── index.html                  coming-soon con i 3 pannelli (v. §4)
-├── mappa/index.html            stub "in arrivo" (link da pannello sinistro)
+├── mappa/                      mappa interattiva vera (Leaflet + Firestore, v. §6)
+│   ├── index.html
+│   ├── img/braenmore.jpg       scansione della mappa del Braenmore
+│   ├── icone/                  icone Flaticon per categoria di punto
+│   └── punti.json              NON PIÙ USATO dalla pagina (i punti sono
+│                                 su Firestore) — lasciato come backup
+│                                 dei 9 luoghi iniziali, v. §6
 ├── the-mist/index.html         stub "in arrivo" (link da pannello destro)
 ├── images/
 │   └── site/
 │       ├── logo-regolazero.png         logo bianco, sfondo trasparente
 │       ├── logo-regolazero-header.png  stessa cosa, versione più piccola
-│       └── cliccami.png                freccia+testo "Cliccami", trasparente
+│       ├── cliccami.png                freccia+testo "Cliccami", trasparente
+│       ├── m_mappa.png                 sfondo pannello sinistro (mappa)
+│       ├── m_scopri.png                sfondo pannello destro (The Mist)
+│       └── m_news.png                  sfondo pannello centrale (newsletter)
 └── .github/
     └── workflows/
         └── deploy.yml           push su main → pubblica il repo così com'è
@@ -171,26 +191,28 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   (`#pannello-centro`, larghezza uguale ai due sopra insieme — se non
   c'è spazio verticale si accorcia in altezza soltanto, disattivando
   `aspect-ratio` via JS per non perdere la larghezza).
-  **Contenuto attuale dei 3 pannelli** (05/09):
-  - `#pannello-sinistra` — link `<a href="/mappa/">` "Mappa interattiva
-    e generatori" → pagina stub `mappa/index.html` ("Pagina in arrivo"),
-    in attesa di ospitare la mappa/i generatori che oggi vivono fuori
-    dal repo (§6: restano da decidere hosting definitivo e collegamento).
-  - `#pannello-destra` — link `<a href="/the-mist/">` "Scopri The Mist"
-    → pagina stub `the-mist/index.html` ("Pagina in arrivo"), da
+  **Contenuto attuale dei 3 pannelli** (aggiornato 05/09): niente più
+  testo scritto nell'HTML — ogni pannello ha un'immagine di sfondo
+  (`background-image`, `background-size: cover`) fornita dall'utente,
+  col titolo già incorporato nell'illustrazione stessa.
+  - `#pannello-sinistra` — link `<a href="/mappa/">`, sfondo
+    `images/site/m_mappa.png`, `aria-label="Mappa interattiva e
+    generatori"` (l'accessibilità del link non dipende più da testo
+    visibile) → mappa interattiva vera, v. §6.
+  - `#pannello-destra` — link `<a href="/the-mist/">`, sfondo
+    `images/site/m_scopri.png`, `aria-label="Scopri The Mist"` →
+    pagina stub `the-mist/index.html` ("Pagina in arrivo"), da
     scrivere rispettando le regole sui contenuti di §7.
-  - `#pannello-centro` — form newsletter (`#form-newsletter`):
-    **registrazione disattivata di proposito** (pulsante `disabled`,
-    messaggio fisso "Al momento non disponibile..."). L'utente ha
-    esplicitamente rifiutato di far scrivere il form direttamente su un
-    file nel repo GitHub via token client-side: qualunque credenziale
-    nel JS del sito è visibile a chiunque (view-source), quindi
-    chiunque potrebbe scrivere/vandalizzare quel file — non è
-    praticabile per un sito statico pubblico, a prescindere dallo scope
-    del token. La strada corretta quando si riprende il discorso: una
-    funzione serverless (token lato server, mai esposto) oppure un
-    servizio di form/email marketing pronto — entrambi "servizio
-    esterno nuovo", quindi da concordare (§9) prima di implementare.
+  - `#pannello-centro` — form newsletter (`#form-newsletter`), sfondo
+    `images/site/m_news.png` (`align-items: flex-end`: il form sta
+    vicino al fondo dell'illustrazione, dove l'immagine schiarisce ed è
+    leggibile). **Funzionante**: al submit scrive su Firestore,
+    collezione `newsletter` (v. sotto per le regole). Prima era
+    disattivato (l'utente aveva rifiutato di scrivere il form
+    direttamente su un file del repo GitHub via token client-side —
+    problema di sicurezza reale, non risolvibile "nascondendo" il
+    token in nessun modo: qualunque cosa nel JS pubblico è leggibile da
+    chiunque). Risolto il 05/09 passando a Firebase (v. §1).
   **Bug CSS/JS incontrati e da ricordare**: (1) un elemento
   `position:fixed` con `left`+`right` e poi una `width` esplicita in un
   media query va centrato con `margin: 0 auto`, altrimenti il browser
@@ -244,27 +266,96 @@ Con Astro/Decap è stato tentato e poi abbandonato (v. §1). Ora che il sito
 ripensato da zero — potenzialmente più semplice proprio perché non c'è più
 un framework/CMS di mezzo con cui far quadrare le cose. Non proporre
 soluzioni finché l'utente non chiede di riprendere questo punto.
+(Firebase/Firestore, v. §1, risolve solo i due casi specifici di §4/§6 —
+mappa e newsletter — non è un CMS per articoli.)
 
 ---
 
-## 6. Strumenti standalone (mappa, generatori) — FUORI da questo repo
+## 6. `mappa/` — mappa interattiva (Leaflet + Firestore)
 
-Mappa interattiva del Braenmore e generatori casuali di The Mist: **non
-vivono qui**. Stanno in:
-```
-C:\Users\mscar\Desktop\regolazero\strumenti\
-├── index.html                    hub con link a tutti gli strumenti
-├── style.css                     tema scuro condiviso
-├── mappa/
-│   ├── index.html                mappa interattiva (pin cliccabili)
-│   └── img/braenmore.jpg         scansione reale del Braenmore
-└── generatore-villaggio/
-    └── index.html                nome/disgrazia/segreto di un villaggio
-```
-Stessa regola di §1: HTML/CSS/JS puro, nessuna dipendenza. Se si riprende
-questo lavoro, partire da quella cartella, non da questo repo. Restano da
-decidere: dove ospitarli stabilmente e come richiamarli dal sito
-definitivo (link diretto o iframe).
+Sostituisce il vecchio prototipo standalone (che viveva fuori dal repo in
+`C:\Users\mscar\Desktop\regolazero\strumenti\mappa\` — quella cartella
+resta lì invariata come riferimento storico, non più la fonte).
+
+- **Leaflet** (CDN, `cdnjs.cloudflare.com/.../leaflet.js`) con
+  `L.CRS.Simple` + `L.imageOverlay('img/braenmore.jpg', ...)`: non è una
+  mappa geografica, è un'immagine trattata come mappa. Comportamento
+  pan/zoom touch e mouse è quello di default di Leaflet — già
+  "alla Google Maps" su mobile e desktop, nessuna configurazione extra.
+  - Zoom minimo = livello che fa **riempire tutto lo schermo** con la
+    mappa (`map.getBoundsZoom(confini, true)` — l'opposto di
+    `fitBounds`, che invece "contiene" lasciando spazio vuoto attorno).
+    `maxBounds` = esattamente i bordi dell'immagine, `maxBoundsViscosity:
+    1`: non si esce mai dalla mappa trascinando.
+  - Un solo controllo zoom, in basso a destra (`zoomControl: false`
+    sulla mappa + `L.control.zoom({position:'bottomright'})` a parte —
+    altrimenti Leaflet mette di suo un secondo controllo in alto a
+    sinistra).
+  - Ogni punto ha un'**etichetta col nome sempre visibile** sotto il
+    segnalino (`bindTooltip(..., {permanent:true})`), non solo nel
+    popup al click.
+- **Categorie** (`luogo`, `citta`, `villaggio`, `png`, `mostro`,
+  `maniero`): icona propria (da Flaticon, fornite dall'utente il 05/09,
+  in `mappa/icone/`) + colore del bordo del segnalino a goccia (stile
+  Google Maps, via `L.divIcon`).
+- **Click sulla mappa** (su spazio vuoto) → modale di creazione:
+  categoria, nome, descrizione, pulsante "Genera automaticamente"
+  (tabelle originali scritte per questo tool, in italiano — **non**
+  tabelle trascritte dal manuale di The Mist, v. nota sotto), Salva.
+  **Click su un punto esistente** → popup di lettura in stile Google
+  Maps (nome + descrizione), via `bindPopup`.
+- **Persistenza: Firestore**, collezione `punti` (progetto Firebase
+  `regolazero`, v. §1 per la config). Lettura pubblica per tutti i
+  visitatori (necessaria per mostrare la mappa), scrittura permessa a
+  chiunque (non c'è login) ma **validata dalle regole** — categoria
+  deve essere una delle 6 valide, nome/descrizione con limiti di
+  lunghezza, lat/lng numerici. **Nessuna modifica o cancellazione dal
+  client** (`allow update, delete: if false`): per correggere/rimuovere
+  un punto sbagliato serve la console Firebase (Firestore Database →
+  collezione `punti`), non c'è modo di farlo dal sito. Se in futuro
+  serve poterlo fare dal sito stesso, serve un sistema di login
+  (Firebase Auth) per l'utente — da valutare quando richiesto.
+  I 9 luoghi originali (nomi presi dal vecchio prototipo, testi ancora
+  segnaposto) sono stati migrati su Firestore il 05/09; il file
+  `mappa/punti.json` resta solo come backup, **non è più letto dalla
+  pagina**. Il pulsante "Esporta punti (JSON)" in alto a destra scarica
+  un backup manuale di quello che c'è in quel momento su Firestore.
+  **Regole di sicurezza attuali** (da aggiornare qui se cambiano —
+  tenerne traccia, non solo nella console Firebase):
+  ```
+  match /punti/{puntoId} {
+    allow read: if true;
+    allow create: if request.resource.data.keys().hasOnly(['categoria','nome','descrizione','lat','lng','creato'])
+      && request.resource.data.categoria in ['luogo','citta','villaggio','png','mostro','maniero']
+      && request.resource.data.nome is string
+      && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 80
+      && request.resource.data.descrizione is string
+      && request.resource.data.descrizione.size() <= 500
+      && request.resource.data.lat is number
+      && request.resource.data.lng is number;
+    allow update, delete: if false;
+  }
+  ```
+- **Generatori casuali — NON usare le tabelle del manuale di The Mist**:
+  il 05/09 l'utente ha chiesto di usare le tabelle del manuale (fornito
+  come zip di immagini delle pagine in `Desktop/regolazero/themist/`)
+  per il generatore automatico. Guardate le pagine ("tab1/2/3.png"):
+  sono tabelle di bottino/veleni/anelli magici con **meccaniche vere**
+  (Toughness DR, danni, prezzi in gc, bonus numerici) — contenuto
+  centrale del manuale a pagamento, non nomi/flavor. Anche tenendole su
+  Firestore e pescandone una a caso per volta (mitigazione proposta
+  dall'utente), resta contenuto meccanico del manuale reso pubblico e
+  gratuito su un sito statico — dove chiunque può comunque leggere il
+  codice sorgente. **Non implementato**: il generatore usa tabelle
+  originali scritte per l'occasione (v. sopra), non materiale del
+  manuale. Se l'utente rivuole insistere su questo punto, richiede una
+  conferma esplicita e consapevole (non un "sì" generico) prima di
+  procedere — resta comunque valida la regola di §7 sul non regalare
+  contenuto del manuale.
+- **Ottimizzazione mobile**: campi del modale con `font-size: 1rem`
+  (≥16px, evita lo zoom automatico di iOS al focus), modale con
+  `max-height: 90vh` e scroll interno, marker e testo dimensionati per
+  il tocco.
 
 ---
 
@@ -290,6 +381,23 @@ luoghi, "The Mist" stesso) invariati in italiano e in inglese.
 - Nessun CDN di terze parti che traccia, a parte l'embed YouTube per
   l'audio di sottofondo (§4) — usa `youtube-nocookie.com` apposta per
   ridurre il tracciamento, ma resta comunque una connessione a Google.
+- **Iscrizioni newsletter (Firestore, collezione `newsletter`)**: le
+  email **non sono leggibili dal sito** per nessuno, visitatori inclusi
+  (`allow read: if false`) — solo scrittura, validata (deve essere una
+  stringa a forma di email, max 254 caratteri), mai modifica/
+  cancellazione dal client. Per vedere la lista iscritti: console
+  Firebase → Firestore Database → collezione `newsletter`. Regole
+  complete:
+  ```
+  match /newsletter/{id} {
+    allow read: if false;
+    allow create: if request.resource.data.keys().hasOnly(['email','creato'])
+      && request.resource.data.email is string
+      && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+      && request.resource.data.email.size() <= 254;
+    allow update, delete: if false;
+  }
+  ```
 - Nessun dato personale in URL.
 - Non inventare mai dati di contatto (email, telefono) come segnaposto —
   è già successo una volta, evitarlo. Se manca un dato reale, ometterlo o
