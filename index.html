@@ -53,6 +53,10 @@
       text-align: center;
       padding: 2rem 1.25rem;
       box-sizing: border-box;
+      /* trasparente ma copre tutta la pagina: senza questo, essendo dopo
+         #pannelli nel DOM con lo stesso z-index, ne intercetterebbe i
+         click ovunque tranne esattamente sul logo. */
+      pointer-events: none;
     }
     .logo {
       width: min(90vw, 32rem);
@@ -69,6 +73,7 @@
     }
     .salita {
       position: relative;
+      pointer-events: auto;
       transition: transform 5.6s cubic-bezier(0.83, 0, 0.17, 1);
     }
     /* Indicatore "Cliccami": freccia verso il logo, in dissolvenza dopo
@@ -117,6 +122,78 @@
       border-radius: 18px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
       box-sizing: border-box;
+    }
+    .pannello--link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      text-decoration: none;
+      color: #cfcfcf;
+      font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+      padding: 1rem;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .pannello--link:hover,
+    .pannello--link:focus-visible {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
+      border-color: rgba(207, 207, 207, 0.55);
+    }
+    .pannello--newsletter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+    .form-newsletter {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.9rem;
+    }
+    .form-newsletter h2 {
+      margin: 0;
+      font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+      font-weight: 600;
+      text-align: center;
+      color: #cfcfcf;
+    }
+    .form-newsletter input[type="email"] {
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: #e9e7e2;
+      color: #1a1a1a;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+    .form-newsletter button {
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: none;
+      background: #e9e7e2;
+      color: #1a1a1a;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+    .form-newsletter button:hover {
+      background: #fff;
+    }
+    .form-newsletter button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .form-newsletter button:disabled:hover {
+      background: #e9e7e2;
+    }
+    .form-newsletter .newsletter-msg {
+      margin: 0;
+      font-size: 0.8rem;
+      text-align: center;
+      color: #9c9c9c;
     }
     .pannello--laterale {
       width: clamp(140px, 26vw, 380px);
@@ -170,9 +247,20 @@
   </button>
 
   <div class="pannelli" id="pannelli">
-    <div class="pannello pannello--laterale" id="pannello-sinistra"></div>
-    <div class="pannello pannello--centrale" id="pannello-centro"></div>
-    <div class="pannello pannello--laterale" id="pannello-destra"></div>
+    <a class="pannello pannello--laterale pannello--link" id="pannello-sinistra" href="/mappa/">
+      Mappa interattiva<br />e generatori
+    </a>
+    <div class="pannello pannello--centrale pannello--newsletter" id="pannello-centro">
+      <form class="form-newsletter" id="form-newsletter">
+        <h2>Iscriviti alla newsletter</h2>
+        <input type="email" name="email" placeholder="Inserisci la tua mail" required />
+        <button type="submit" disabled>Iscriviti</button>
+        <p class="newsletter-msg" id="newsletter-msg">Al momento non disponibile, ci scusiamo. La registrazione tornerà funzionante il prima possibile.</p>
+      </form>
+    </div>
+    <a class="pannello pannello--laterale pannello--link" id="pannello-destra" href="/the-mist/">
+      Scopri<br />The Mist
+    </a>
   </div>
 
   <div class="contenuto">
@@ -244,6 +332,21 @@
           pannelli.classList.add('pannelli--visibile');
           pannelli.style.transform = 'translateY(' + deltaPannelli + 'px)';
         }, DURATA_LOGO_MS / 2);
+      });
+    })();
+  </script>
+
+  <script>
+    // Form newsletter: registrazione DISATTIVATA per ora (pulsante
+    // disabled, messaggio "non disponibile" sempre visibile) — nessun
+    // servizio esterno collegato (scelta dell'utente in attesa, vedi
+    // CLAUDE.md §9: nessun servizio nuovo senza chiedere prima). Il
+    // preventDefault resta come rete di sicurezza, nel caso un browser
+    // permetta comunque l'invio implicito col tasto Invio sull'input.
+    (function () {
+      var form = document.getElementById('form-newsletter');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
       });
     })();
   </script>

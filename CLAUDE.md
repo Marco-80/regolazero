@@ -68,7 +68,9 @@ REGOLAZERO/
 ├── README.md
 ├── .gitignore
 ├── CNAME                       riga singola: regolazero.it
-├── index.html                  UNICA pagina per ora: coming-soon
+├── index.html                  coming-soon con i 3 pannelli (v. §4)
+├── mappa/index.html            stub "in arrivo" (link da pannello sinistro)
+├── the-mist/index.html         stub "in arrivo" (link da pannello destro)
 ├── images/
 │   └── site/
 │       ├── logo-regolazero.png         logo bianco, sfondo trasparente
@@ -134,12 +136,10 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   Se si clicca prima dei 4,5s il timer viene annullato e non compare
   affatto. `pointer-events:none` per non intercettare i click destinati
   al logo sottostante.
-- **Pannelli sotto il logo** (`#pannelli`, 3 div placeholder vuoti
-  `#pannello-sinistra/centro/destra`, in futuro ospiteranno moduli/link/
-  immagini non necessariamente statici): `position:fixed`, indipendenti
-  dal logo. Quando il logo è a **metà** della sua risalita (2,8s), i
-  pannelli partono da più in basso e risalgono in dissolvenza (3,4s,
-  più veloci del logo) fino quasi al centro schermo (+30px). La
+- **Pannelli sotto il logo** (`#pannelli`): `position:fixed`,
+  indipendenti dal logo. Quando il logo è a **metà** della sua risalita
+  (2,8s), i pannelli partono da più in basso e risalgono in dissolvenza
+  (3,4s, più veloci del logo) fino quasi al centro schermo (+30px). La
   posizione finale è **calcolata in JS a ogni click** (non in puro CSS)
   sulle dimensioni reali di logo/pannelli/viewport, per garantire che
   non finiscano mai sotto al logo, a nessuna risoluzione (desktop
@@ -149,12 +149,38 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   (`#pannello-centro`, larghezza uguale ai due sopra insieme — se non
   c'è spazio verticale si accorcia in altezza soltanto, disattivando
   `aspect-ratio` via JS per non perdere la larghezza).
-  **Bug CSS incontrati e da ricordare**: (1) un elemento
+  **Contenuto attuale dei 3 pannelli** (05/09):
+  - `#pannello-sinistra` — link `<a href="/mappa/">` "Mappa interattiva
+    e generatori" → pagina stub `mappa/index.html` ("Pagina in arrivo"),
+    in attesa di ospitare la mappa/i generatori che oggi vivono fuori
+    dal repo (§6: restano da decidere hosting definitivo e collegamento).
+  - `#pannello-destra` — link `<a href="/the-mist/">` "Scopri The Mist"
+    → pagina stub `the-mist/index.html` ("Pagina in arrivo"), da
+    scrivere rispettando le regole sui contenuti di §7.
+  - `#pannello-centro` — form newsletter (`#form-newsletter`):
+    **registrazione disattivata di proposito** (pulsante `disabled`,
+    messaggio fisso "Al momento non disponibile..."). L'utente ha
+    esplicitamente rifiutato di far scrivere il form direttamente su un
+    file nel repo GitHub via token client-side: qualunque credenziale
+    nel JS del sito è visibile a chiunque (view-source), quindi
+    chiunque potrebbe scrivere/vandalizzare quel file — non è
+    praticabile per un sito statico pubblico, a prescindere dallo scope
+    del token. La strada corretta quando si riprende il discorso: una
+    funzione serverless (token lato server, mai esposto) oppure un
+    servizio di form/email marketing pronto — entrambi "servizio
+    esterno nuovo", quindi da concordare (§9) prima di implementare.
+  **Bug CSS/JS incontrati e da ricordare**: (1) un elemento
   `position:fixed` con `left`+`right` e poi una `width` esplicita in un
   media query va centrato con `margin: 0 auto`, altrimenti il browser
   scarta `right` e il box si incolla a sinistra; (2) impostare `height`
   via JS su un elemento con `aspect-ratio` in CSS fa ricalcolare anche
-  la `width` — va disattivato `aspect-ratio: auto` insieme all'altezza.
+  la `width` — va disattivato `aspect-ratio: auto` insieme all'altezza;
+  (3) **`.contenuto`** (il wrapper che centra il logo) è trasparente ma
+  copre l'intera pagina (`min-height:100svh`) — essendo dopo `#pannelli`
+  nel DOM con lo stesso `z-index`, senza `pointer-events:none` su
+  `.contenuto` (e `pointer-events:auto` su `.salita` per ridare i click
+  al logo) intercetta i click destinati ai pannelli ovunque tranne
+  esattamente sul logo.
 - **Audio di sottofondo**: player YouTube nascosto (video attuale
   `c6RiHp2-bGY`; il precedente `1YhKgK_2PU4` resta commentato nel codice
   nel caso si torni indietro), dominio `youtube-nocookie.com` per
