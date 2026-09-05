@@ -103,22 +103,39 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   richiesta esplicita del 04/09 notte, sostituito dall'interazione al
   click descritta sotto).
 - **Nebbia di sfondo animata**: due gruppi di macchie bianche appena
-  percettibili, sfocate via CSS (`filter: blur(70px)`), che derivano
-  con **p5.js** (rumore di Perlin, `t += 0.0022 * vel` per frame —
-  velocità aumentata il 05/09 per renderla "un po' più dinamica") —
-  script caricato da CDN (`cdnjs.cloudflare.com/.../p5.min.js`), nessuna
-  build, coerente con §1. **3 "nuclei"** compatti (raggio 0.35–0.6× la
-  dimensione maggiore dello schermo, alpha base 5/255, velocità normale)
-  + **3 macchie diffuse** più larghe (raggio 0.85–1.15×, alpha base
-  3/255, velocità ridotta ×0.6). Ogni macchia, oltre a muoversi, ha
-  anche un suo **"respiro" d'intensità indipendente** (altro asse di
-  rumore di Perlin): l'alpha oscilla tra il 60% e il 140% del suo valore
-  base, così non solo si spostano ma si accendono/affievoliscono per
-  conto proprio. Ogni macchia segue un percorso di rumore indipendente
-  (seed diverso): si incrociano, si fondono
-  (l'alpha si somma dove si sovrappongono) e si dividono da sole, senza
-  logica esplicita di collisione. `pointer-events` non toccati (il
-  canvas sta dietro al contenuto, `z-index: 0`).
+  percettibili con **p5.js** (rumore di Perlin) — script caricato da CDN
+  (`cdnjs.cloudflare.com/.../p5.min.js`), nessuna build, coerente con §1.
+  Sfocate via CSS (`filter: blur(70px)`) **e** disegnate con un
+  **gradiente radiale** (centro pieno → bordo trasparente, via
+  `ctx.createRadialGradient` sul context nativo esposto da
+  `p.drawingContext`) invece di un cerchio a tinta unita: la sfumatura
+  resta morbida anche a distanza ravvicinata, non solo grazie al blur.
+  **3 "nuclei"** piccoli (raggio 0.22–0.4× la dimensione maggiore dello
+  schermo, alpha base 5/255) che girano per **tutto lo schermo** +
+  **2 macchie grandi e diffuse** (raggio 0.85–1.15×, alpha base 3/255)
+  che restano più concentrate verso il centro — a ciascuna macchia è
+  associato un `espansione` diverso (2.6 per i nuclei, 0.9 per le
+  diffuse: v. nota rumore sotto) che ne limita o allarga il raggio
+  d'azione. Le diffuse sono anche le più lente (`vel: 0.6`), i nuclei
+  volutamente rallentati il 05/09 (`vel: 0.5`, erano troppo veloci a
+  `1`). Ogni macchia varia anche **velocità** (0.4×–1.6× la propria,
+  altro asse di rumore indipendente: accelera/rallenta da sola nel
+  tempo, ma la media resta lenta) e **intensità** (alpha tra 60% e 140%
+  del suo valore base) per conto proprio, oltre a muoversi — non solo si
+  spostano, cambiano ritmo e si accendono/affievoliscono. Ogni macchia
+  segue un percorso di rumore indipendente (seed diverso): si
+  incrociano, si fondono (l'alpha si somma dove si sovrappongono) e si
+  dividono da sole, senza logica esplicita di collisione.
+  **Nota sul rumore di Perlin** (bug/comportamento da ricordare):
+  `p.noise()` da solo oscilla quasi sempre tra ~0.15 e ~0.85, non arriva
+  mai vicino agli estremi 0/1 — usato direttamente per la posizione, le
+  macchie restano ammassate al centro dello schermo e non toccano mai i
+  bordi. Si corregge "allargando" lo scarto dal centro prima di
+  convertirlo in posizione: `p.constrain(0.5 + (raw - 0.5) * espansione, 0, 1)`
+  — con `espansione` alto (es. 2.6) si arriva davvero ai bordi, con uno
+  basso (es. 0.9) il movimento resta più contenuto verso il centro.
+  `pointer-events` non toccati (il canvas sta dietro al contenuto,
+  `z-index: 0`).
 - Niente pulsante di login, niente Netlify: rimossi su richiesta esplicita
   dell'utente il 04/09 sera
   ("elimina tutto ciò che ha a che fare con Astro, Netlify"). Se in futuro

@@ -405,19 +405,25 @@
     // fondono e si dividono da sole), sfocate via CSS, quasi impercettibili.
     new p5(function (p) {
       var macchie = [];
-      var N_NUCLEI = 3;   // macchie compatte, come quelle originali
-      var N_DIFFUSE = 3;  // macchie più larghe e diradate
+      var ctx; // context canvas nativo, per il gradiente radiale (v. draw)
+      var N_NUCLEI = 3;   // macchie compatte, girano per tutto lo schermo
+      var N_DIFFUSE = 2;  // macchie grandi e diffuse, restano più sul centro
 
       p.setup = function () {
         var c = p.createCanvas(p.windowWidth, p.windowHeight);
         c.parent('nebbia');
-        p.noStroke();
+        ctx = p.drawingContext;
         for (var i = 0; i < N_NUCLEI; i++) {
           macchie.push({
             seed: i * 137,
-            r: p.random(0.35, 0.6) * Math.max(p.width, p.height),
+            r: p.random(0.22, 0.4) * Math.max(p.width, p.height),
             alpha: 5,
-            vel: 1,
+            vel: 0.5, // rallentate: prima si muovevano troppo in fretta
+            // "allarga" lo scarto dal centro del rumore di Perlin (v.
+            // sotto in draw): da solo arriva a malapena al 30%-70% dello
+            // schermo. Con 2.6 arrivano davvero fino ai bordi.
+            espansione: 2.6,
+            tPos: p.random(1000), // punto di partenza diverso per ognuna
           });
         }
         for (var j = 0; j < N_DIFFUSE; j++) {
@@ -426,6 +432,8 @@
             r: p.random(0.85, 1.15) * Math.max(p.width, p.height),
             alpha: 3,
             vel: 0.6, // ancora più lente, restano diffuse sullo sfondo
+            espansione: 0.9, // wander limitato: restano sul centro
+            tPos: p.random(1000),
           });
         }
       };
@@ -436,19 +444,48 @@
 
       p.draw = function () {
         p.clear();
+        var tGlobale = p.frameCount * 0.0022;
         for (var i = 0; i < macchie.length; i++) {
           var m = macchie[i];
-          var t = p.frameCount * 0.0022 * m.vel; // un po' più veloce di prima (era 0.0015)
-          var nx = p.noise(m.seed, t) * p.width;
-          var ny = p.noise(m.seed + 50, t) * p.height;
+
+          // Velocità variabile: ogni macchia accelera e rallenta per
+          // conto suo (0.4x-1.6x la sua velocità base) invece di
+          // muoversi a un ritmo fisso. Il tempo-posizione si accumula
+          // (non è più funzione diretta di frameCount), così la
+          // variazione di ritmo si vede davvero nel movimento — ma la
+          // media resta lenta come prima.
+          var variazioneVel = p.noise(m.seed + 200, tGlobale * 0.4);
+          var fattoreVel = 0.4 + variazioneVel * 1.2;
+          m.tPos += 0.0022 * m.vel * fattoreVel;
+
+          // Il rumore grezzo oscilla quasi solo tra ~0.3 e ~0.7: si
+          // "allarga" lo scarto dal centro (0.5) prima di convertirlo in
+          // posizione, così le macchie arrivano davvero fino ai bordi
+          // invece di restare ammassate al centro dello schermo.
+          var nxRaw = p.noise(m.seed, m.tPos);
+          var nyRaw = p.noise(m.seed + 50, m.tPos);
+          var nx = p.constrain(0.5 + (nxRaw - 0.5) * m.espansione, 0, 1) * p.width;
+          var ny = p.constrain(0.5 + (nyRaw - 0.5) * m.espansione, 0, 1) * p.height;
+
           // Respiro d'intensità indipendente dalla posizione: ogni macchia
           // si accende e si affievolisce per conto suo (60%-140% del suo
           // alpha base), oltre a muoversi — più vita, sempre appena
           // percettibile.
-          var pulsazione = p.noise(m.seed + 100, t * 1.5);
+          var pulsazione = p.noise(m.seed + 100, m.tPos * 1.5);
           var alphaDinamico = m.alpha * (0.6 + pulsazione * 0.8);
-          p.fill(255, 255, 255, alphaDinamico);
-          p.ellipse(nx, ny, m.r, m.r);
+
+          // Gradiente radiale (centro pieno, bordo trasparente) invece di
+          // un cerchio a tinta unita: da sola una tinta unita, anche
+          // sfocata via CSS, resta un disco con un bordo — con il
+          // gradiente la sfumatura è morbida già prima del blur.
+          var raggio = m.r / 2;
+          var grad = ctx.createRadialGradient(nx, ny, 0, nx, ny, raggio);
+          grad.addColorStop(0, 'rgba(255, 255, 255, ' + (alphaDinamico / 255) + ')');
+          grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(nx, ny, raggio, 0, Math.PI * 2);
+          ctx.fill();
         }
       };
     });
