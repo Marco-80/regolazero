@@ -182,8 +182,9 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   al logo) intercetta i click destinati ai pannelli ovunque tranne
   esattamente sul logo.
 - **Audio di sottofondo**: player YouTube nascosto (video attuale
-  `c6RiHp2-bGY`; il precedente `1YhKgK_2PU4` resta commentato nel codice
-  nel caso si torni indietro), dominio `youtube-nocookie.com` per
+  `1YhKgK_2PU4`, ripristinato il 05/09 dopo una prova con `c6RiHp2-bGY`
+  che resta commentato nel codice nel caso si torni indietro), dominio
+  `youtube-nocookie.com` per
   ridurre il tracciamento, via **YouTube IFrame Player API** ufficiale
   (`https://www.youtube.com/iframe_api`) — nessun download/estrazione
   audio, solo embed standard. **Parte con l'audio già attivo**
