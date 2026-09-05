@@ -104,13 +104,18 @@ del lavoro precedente: tenerla così, non ridisegnarla senza che lo chieda.
   click descritta sotto).
 - **Nebbia di sfondo animata**: due gruppi di macchie bianche appena
   percettibili, sfocate via CSS (`filter: blur(70px)`), che derivano
-  lentissime con **p5.js** (rumore di Perlin, `t += 0.0015 * vel` per
-  frame) — script caricato da CDN (`cdnjs.cloudflare.com/.../p5.min.js`),
-  nessuna build, coerente con §1. **3 "nuclei"** compatti (raggio
-  0.35–0.6× la dimensione maggiore dello schermo, alpha 5/255, velocità
-  normale) + **3 macchie diffuse** più larghe (raggio 0.85–1.15×, alpha
-  3/255, velocità ridotta ×0.6). Ogni macchia segue un percorso di
-  rumore indipendente (seed diverso): si incrociano, si fondono
+  con **p5.js** (rumore di Perlin, `t += 0.0022 * vel` per frame —
+  velocità aumentata il 05/09 per renderla "un po' più dinamica") —
+  script caricato da CDN (`cdnjs.cloudflare.com/.../p5.min.js`), nessuna
+  build, coerente con §1. **3 "nuclei"** compatti (raggio 0.35–0.6× la
+  dimensione maggiore dello schermo, alpha base 5/255, velocità normale)
+  + **3 macchie diffuse** più larghe (raggio 0.85–1.15×, alpha base
+  3/255, velocità ridotta ×0.6). Ogni macchia, oltre a muoversi, ha
+  anche un suo **"respiro" d'intensità indipendente** (altro asse di
+  rumore di Perlin): l'alpha oscilla tra il 60% e il 140% del suo valore
+  base, così non solo si spostano ma si accendono/affievoliscono per
+  conto proprio. Ogni macchia segue un percorso di rumore indipendente
+  (seed diverso): si incrociano, si fondono
   (l'alpha si somma dove si sovrappongono) e si dividono da sole, senza
   logica esplicita di collisione. `pointer-events` non toccati (il
   canvas sta dietro al contenuto, `z-index: 0`).

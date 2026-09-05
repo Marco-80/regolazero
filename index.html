@@ -438,10 +438,16 @@
         p.clear();
         for (var i = 0; i < macchie.length; i++) {
           var m = macchie[i];
-          var t = p.frameCount * 0.0015 * m.vel; // lentissimo
+          var t = p.frameCount * 0.0022 * m.vel; // un po' più veloce di prima (era 0.0015)
           var nx = p.noise(m.seed, t) * p.width;
           var ny = p.noise(m.seed + 50, t) * p.height;
-          p.fill(255, 255, 255, m.alpha); // appena percettibile
+          // Respiro d'intensità indipendente dalla posizione: ogni macchia
+          // si accende e si affievolisce per conto suo (60%-140% del suo
+          // alpha base), oltre a muoversi — più vita, sempre appena
+          // percettibile.
+          var pulsazione = p.noise(m.seed + 100, t * 1.5);
+          var alphaDinamico = m.alpha * (0.6 + pulsazione * 0.8);
+          p.fill(255, 255, 255, alphaDinamico);
           p.ellipse(nx, ny, m.r, m.r);
         }
       };
