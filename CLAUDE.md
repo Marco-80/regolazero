@@ -447,32 +447,135 @@ pannelli) e in `the-mist/index.html` (v. §4).
   i temi di un blog sono più aperti), `estratto`, `contenuto` (testo
   semplice, un paragrafo per riga vuota — niente HTML/markdown, per
   evitare qualunque rischio di injection dato che va incontro a
-  `textContent`, non `innerHTML`), `pubblicato` (bool).
-  **Solo l'utente autenticato (stesso login della mappa, v. §6) può
-  scrivere** — creare, modificare, eliminare articoli. I visitatori non
-  autenticati vedono solo gli articoli con `pubblicato: true`; l'utente
-  loggato vede anche le bozze (utile per scrivere in anticipo senza
-  pubblicare subito).
-  **Regole di sicurezza** (`<EMAIL_ADMIN>` = email vera, v. nota in §6
-  sul perché non è scritta qui):
+  `textContent`, non `innerHTML`), `pubblicato` (bool), `visibilita`
+  (`'pubblico'` o `'iscritti'` — solo chi ha un account può leggere gli
+  "iscritti"), `autoreUid`/`autoreEmail`.
+- **Sistema di ruoli** (aggiunto 05/09, richiesto esplicitamente
+  dall'utente): collezione Firestore `users` (id documento = uid
+  Firebase Auth), campi `email`, `nome`, `ruolo`
+  (`'ospite'|'autore'|'redattore'|'admin'`), `creato`. **Chi si
+  registra/accede la prima volta (Google o email) parte sempre come
+  "ospite"** — il proprio documento viene creato in automatico dal
+  client (`assicuraUtenteERuolo` in entrambe le pagine del blog), ma
+  solo con `ruolo:'ospite'`: le regole impediscono di auto-assegnarsi
+  un ruolo più alto.
+  - **Ospite**: nessun privilegio di scrittura sul blog per ora — la
+    ragione di esistere come account è poter leggere in futuro
+    contenuti/download riservati agli iscritti (`visibilita:'iscritti'`
+    sui post è già implementato; una sezione download vera e propria
+    richiederebbe **Firebase Storage**, servizio non ancora approvato —
+    v. nota sotto).
+  - **Autore**: può scrivere articoli, ma sempre come bozza
+    (`pubblicato` forzato a `false` sia in JS sia nelle regole) — non
+    può pubblicare da solo, e può modificare/eliminare solo le **proprie**
+    bozze non ancora pubblicate (una volta approvata, non può più
+    toccarla).
+  - **Redattore**: può creare/modificare/eliminare **qualunque**
+    articolo di chiunque, ed è l'unico (insieme ad admin) che può
+    impostare `pubblicato: true` — "approvare e pubblicare".
+  - **Admin**: come Redattore, più accesso al pannello "Gestione
+    utenti" (`#btn-utenti`, visibile solo con `ruolo:'admin'`) dove può
+    cambiare il ruolo di ciascun utente registrato (unico modo per
+    promuovere qualcuno — non c'è autopromozione). **Bootstrap**: il
+    primissimo admin (l'utente stesso) non può assegnarsi il ruolo da
+    un pannello a cui non ha ancora accesso — va fatto **una tantum a
+    mano** nella console Firebase (Firestore Database → collezione
+    `users` → il proprio documento, dopo il primo login → cambiare
+    `ruolo` in `"admin"`). Da lì in poi tutto il resto si gestisce dal
+    pannello nel blog.
+  - **Perché l'email fissa (v. §1) resta comunque nelle regole**: è la
+    rete di sicurezza — anche se la collezione `users` avesse un
+    problema o il proprio documento venisse cancellato per errore,
+    l'account con quell'email resta admin.
+  - **Non testato end-to-end con account reali Autore/Redattore
+    diversi dall'admin** (serve un secondo/terzo account Google per
+    farlo, che Claude Code non può simulare) — testato invece: la UI si
+    adatta correttamente al ruolo (bottoni/nota che appaiono e
+    spariscono), le query rispettano la forma richiesta dalle regole
+    (niente indici compositi necessari), l'admin vede il pannello
+    utenti. Se assegnando un ruolo Autore/Redattore a un vero secondo
+    account qualcosa si inceppa (permission-denied inatteso), il primo
+    posto da controllare sono le regole Firestore riportate sotto.
+  **Regole di sicurezza complete** (`<EMAIL_ADMIN>` = email vera, v.
+  nota sopra sul perché non è scritta qui — va nella console Firebase,
+  non in questo file):
   ```
+  function ruoloUtente() {
+    return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+      ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ruolo
+      : 'ospite';
+  }
+  function isAdmin() {
+    return (request.auth != null && request.auth.token.email == '<EMAIL_ADMIN>') || ruoloUtente() == 'admin';
+  }
+  function puoApprovare() {
+    return request.auth != null && (ruoloUtente() == 'redattore' || isAdmin());
+  }
+  function puoScrivere() {
+    return request.auth != null && (ruoloUtente() == 'autore' || puoApprovare());
+  }
+
+  match /users/{uid} {
+    allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    allow create: if request.auth != null && request.auth.uid == uid
+      && request.resource.data.keys().hasOnly(['email','nome','ruolo','creato'])
+      && request.resource.data.ruolo == 'ospite';
+    allow update: if isAdmin()
+      && request.resource.data.keys().hasOnly(['email','nome','ruolo','creato'])
+      && request.resource.data.ruolo in ['ospite','autore','redattore','admin'];
+    allow delete: if false;
+  }
+
   match /blog_posts/{postId} {
-    allow read: if resource.data.pubblicato == true || request.auth.token.email == '<EMAIL_ADMIN>';
-    allow create: if request.auth.token.email == '<EMAIL_ADMIN>'
+    allow read: if
+      (resource.data.pubblicato == true && (resource.data.visibilita == 'pubblico' || request.auth != null))
+      || puoApprovare()
+      || (request.auth != null && ruoloUtente() == 'autore' && resource.data.autoreUid == request.auth.uid);
+
+    allow create: if puoScrivere()
+      && request.resource.data.keys().hasOnly(['titolo','categoria','estratto','contenuto','pubblicato','visibilita','autoreUid','autoreEmail','creato'])
+      && request.resource.data.autoreUid == request.auth.uid
       && request.resource.data.titolo is string && request.resource.data.titolo.size() > 0 && request.resource.data.titolo.size() <= 140
       && request.resource.data.estratto is string && request.resource.data.estratto.size() <= 300
       && request.resource.data.contenuto is string && request.resource.data.contenuto.size() <= 20000
       && request.resource.data.categoria is string && request.resource.data.categoria.size() <= 60
-      && request.resource.data.pubblicato is bool;
-    allow update: if request.auth.token.email == '<EMAIL_ADMIN>'
+      && request.resource.data.visibilita in ['pubblico', 'iscritti']
+      && request.resource.data.pubblicato is bool
+      && (puoApprovare() || request.resource.data.pubblicato == false);
+
+    allow update: if (
+      puoApprovare()
+      && request.resource.data.keys().hasOnly(['titolo','categoria','estratto','contenuto','pubblicato','visibilita','autoreUid','autoreEmail','creato'])
       && request.resource.data.titolo is string && request.resource.data.titolo.size() > 0 && request.resource.data.titolo.size() <= 140
       && request.resource.data.estratto is string && request.resource.data.estratto.size() <= 300
       && request.resource.data.contenuto is string && request.resource.data.contenuto.size() <= 20000
       && request.resource.data.categoria is string && request.resource.data.categoria.size() <= 60
-      && request.resource.data.pubblicato is bool;
-    allow delete: if request.auth.token.email == '<EMAIL_ADMIN>';
+      && request.resource.data.visibilita in ['pubblico', 'iscritti']
+      && request.resource.data.pubblicato is bool
+    ) || (
+      request.auth != null && ruoloUtente() == 'autore'
+      && resource.data.autoreUid == request.auth.uid
+      && resource.data.pubblicato == false
+      && request.resource.data.pubblicato == false
+      && request.resource.data.autoreUid == request.auth.uid
+      && request.resource.data.keys().hasOnly(['titolo','categoria','estratto','contenuto','pubblicato','visibilita','autoreUid','autoreEmail','creato'])
+      && request.resource.data.titolo is string && request.resource.data.titolo.size() > 0 && request.resource.data.titolo.size() <= 140
+      && request.resource.data.estratto is string && request.resource.data.estratto.size() <= 300
+      && request.resource.data.contenuto is string && request.resource.data.contenuto.size() <= 20000
+      && request.resource.data.categoria is string && request.resource.data.categoria.size() <= 60
+      && request.resource.data.visibilita in ['pubblico', 'iscritti']
+    );
+
+    allow delete: if puoApprovare();
   }
   ```
+- **Download/contenuti riservati oltre agli articoli**: l'utente ha
+  chiesto anche "una parte per i download di contenuti accessibile solo
+  a chi è loggato" — i post con `visibilita:'iscritti'` coprono già gli
+  **articoli** riservati, ma dei file veri e propri da scaricare
+  servirebbero **Firebase Storage** (prodotto Firebase diverso da
+  Firestore, con le sue regole a parte) — **non ancora approvato/
+  implementato**, da chiedere esplicitamente se/quando serve davvero.
 
 ---
 

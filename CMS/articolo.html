@@ -100,7 +100,19 @@
     .corpo-articolo p { line-height: 1.7; color: #d6d6d6; }
     .vuoto { color: #8a8a8a; font-size: 0.9rem; }
 
-    .azioni-admin { display: flex; gap: 0.6rem; margin-top: 2.5rem; }
+    .azioni-admin { display: flex; gap: 0.6rem; margin-top: 2.5rem; flex-wrap: wrap; }
+    .etichetta-iscritti {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.05rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(147, 51, 234, 0.18);
+      color: #c9a3f5;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+    }
 
     /* 767px: stesso breakpoint di .pure-u-md-* di Pure CSS. */
     @media (max-width: 767px) {
@@ -200,10 +212,16 @@
       <textarea id="campo-estratto" style="min-height:4rem;"></textarea>
       <label for="campo-contenuto">Contenuto (un paragrafo per riga vuota)</label>
       <textarea id="campo-contenuto"></textarea>
-      <div class="riga-checkbox">
+      <label for="campo-visibilita">Chi può leggerlo (una volta pubblicato)</label>
+      <select id="campo-visibilita">
+        <option value="pubblico">Pubblico (chiunque)</option>
+        <option value="iscritti">Solo iscritti (serve un account)</option>
+      </select>
+      <div class="riga-checkbox" id="riga-pubblicato">
         <input type="checkbox" id="campo-pubblicato" />
-        <label for="campo-pubblicato">Pubblicato (visibile a tutti)</label>
+        <label for="campo-pubblicato">Pubblicato (visibile secondo la visibilità scelta sopra)</label>
       </div>
+      <p class="vuoto" id="nota-approvazione" style="margin-top:0.6rem;" hidden>Resta una bozza finché un Redattore non la approva.</p>
       <div class="riga-pulsanti">
         <button type="button" class="pure-button pulsante-pillola" id="btn-articolo-annulla">Annulla</button>
         <button type="button" class="pure-button pulsante-pillola primario" id="btn-articolo-salva">Salva</button>
@@ -225,9 +243,25 @@
     });
     var db = firebase.firestore();
     var collezioneArticoli = db.collection('blog_posts');
+    var collezioneUtenti = db.collection('users');
     var autenticato = false;
+    var ruoloUtente = null;
     var articoli = [];
     var idCorrente = new URLSearchParams(location.search).get('id');
+
+    function assicuraUtenteERuolo(utente) {
+      var rif = collezioneUtenti.doc(utente.uid);
+      return rif.get().then(function (doc) {
+        if (doc.exists) return doc.data().ruolo || 'ospite';
+        return rif.set({
+          email: utente.email || '',
+          nome: utente.displayName || '',
+          ruolo: 'ospite',
+          creato: firebase.firestore.FieldValue.serverTimestamp(),
+        }).then(function () { return 'ospite'; });
+      });
+    }
+    function puoApprovare() { return ruoloUtente === 'redattore' || ruoloUtente === 'admin'; }
 
     function formattaData(timestamp) {
       if (!timestamp || !timestamp.toDate) return '';
@@ -266,20 +300,33 @@
       });
     }
 
+    function puoModificare(articolo) {
+      if (puoApprovare()) return true; // redattore/admin: qualunque articolo
+      var uid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
+      return ruoloUtente === 'autore' && articolo.autoreUid === uid && !articolo.pubblicato;
+    }
+
     function disegnaArticolo() {
       var main = document.getElementById('contenuto-principale');
       var articolo = articoli.find(function (a) { return a.id === idCorrente; });
       if (!articolo) {
-        main.innerHTML = '<p class="vuoto">Articolo non trovato.</p>';
+        main.innerHTML = '<p class="vuoto">Articolo non trovato (o non hai i permessi per vederlo).</p>';
         return;
       }
+      var modificabile = puoModificare(articolo);
       main.innerHTML =
         '<span class="categoria"></span><h1></h1><div class="data"></div>' +
         '<div class="corpo-articolo"></div>' +
-        (autenticato ? '<div class="azioni-admin"><button type="button" class="pure-button pulsante-pillola" id="btn-modifica">Modifica</button><button type="button" class="pure-button pulsante-pillola pericolo" id="btn-elimina">Elimina</button></div>' : '');
+        (modificabile ? '<div class="azioni-admin"><button type="button" class="pure-button pulsante-pillola" id="btn-modifica">Modifica</button><button type="button" class="pure-button pulsante-pillola pericolo" id="btn-elimina">Elimina</button></div>' : '');
       main.querySelector('.categoria').textContent = articolo.categoria || 'Generale';
+      if (articolo.visibilita === 'iscritti') {
+        var tag = document.createElement('span');
+        tag.className = 'etichetta-iscritti';
+        tag.textContent = 'Iscritti';
+        main.querySelector('.categoria').appendChild(tag);
+      }
       main.querySelector('h1').textContent = articolo.titolo;
-      main.querySelector('.data').textContent = formattaData(articolo.creato) + (articolo.pubblicato ? '' : ' — bozza, visibile solo a te');
+      main.querySelector('.data').textContent = formattaData(articolo.creato) + (articolo.pubblicato ? '' : ' — bozza');
       var corpo = main.querySelector('.corpo-articolo');
       (articolo.contenuto || '').split(/\n\s*\n/).forEach(function (paragrafo) {
         if (!paragrafo.trim()) return;
@@ -287,22 +334,44 @@
         p.textContent = paragrafo.trim();
         corpo.appendChild(p);
       });
-      if (autenticato) {
+      if (modificabile) {
         document.getElementById('btn-modifica').addEventListener('click', function () { apriModaleModifica(articolo); });
         document.getElementById('btn-elimina').addEventListener('click', function () { eliminaArticolo(articolo); });
       }
     }
 
+    function unisciPerId(liste) {
+      var mappa = {};
+      liste.forEach(function (lista) { lista.forEach(function (a) { mappa[a.id] = a; }); });
+      return Object.keys(mappa).map(function (id) { return mappa[id]; });
+    }
+    function docsAOggetti(snapshot) {
+      return snapshot.docs.map(function (doc) {
+        var dati = doc.data();
+        dati.id = doc.id;
+        return dati;
+      });
+    }
+
     function caricaArticoli() {
       // Niente .orderBy() qui apposta: v. nota in CMS/index.html (evita
-      // di dover creare un indice composito su Firestore).
-      var query = autenticato ? collezioneArticoli : collezioneArticoli.where('pubblicato', '==', true);
-      query.get().then(function (snapshot) {
-        articoli = snapshot.docs.map(function (doc) {
-          var dati = doc.data();
-          dati.id = doc.id;
-          return dati;
-        });
+      // di dover creare un indice composito su Firestore). Le query
+      // devono restare strutturalmente conformi alle regole per ciascun
+      // ruolo, v. stessa nota in CMS/index.html.
+      var promessa;
+      if (puoApprovare()) {
+        promessa = collezioneArticoli.get().then(docsAOggetti);
+      } else if (autenticato) {
+        var uid = firebase.auth().currentUser.uid;
+        promessa = Promise.all([
+          collezioneArticoli.where('pubblicato', '==', true).get().then(docsAOggetti),
+          collezioneArticoli.where('autoreUid', '==', uid).get().then(docsAOggetti),
+        ]).then(unisciPerId);
+      } else {
+        promessa = collezioneArticoli.where('pubblicato', '==', true).where('visibilita', '==', 'pubblico').get().then(docsAOggetti);
+      }
+      promessa.then(function (lista) {
+        articoli = lista;
         articoli.sort(function (a, b) {
           var ta = a.creato && a.creato.toMillis ? a.creato.toMillis() : 0;
           var tb = b.creato && b.creato.toMillis ? b.creato.toMillis() : 0;
@@ -326,7 +395,15 @@
       autenticato = !!utente;
       btnAccedi.hidden = autenticato;
       btnEsci.hidden = !autenticato;
-      caricaArticoli();
+      if (!utente) {
+        ruoloUtente = null;
+        caricaArticoli();
+        return;
+      }
+      assicuraUtenteERuolo(utente).then(function (ruolo) {
+        ruoloUtente = ruolo;
+        caricaArticoli();
+      });
     });
 
     btnAccedi.addEventListener('click', function () {
@@ -360,20 +437,28 @@
     });
     btnEsci.addEventListener('click', function () { firebase.auth().signOut(); });
 
-    // --- Modifica/elimina (solo autenticati) ---
+    // --- Modifica/elimina ---
     var overlayArticolo = document.getElementById('overlay-articolo');
     var campoTitolo = document.getElementById('campo-titolo');
     var campoCategoria = document.getElementById('campo-categoria');
     var campoEstratto = document.getElementById('campo-estratto');
     var campoContenuto = document.getElementById('campo-contenuto');
+    var campoVisibilita = document.getElementById('campo-visibilita');
     var campoPubblicato = document.getElementById('campo-pubblicato');
+    var rigaPubblicato = document.getElementById('riga-pubblicato');
+    var notaApprovazione = document.getElementById('nota-approvazione');
 
     function apriModaleModifica(articolo) {
       campoTitolo.value = articolo.titolo;
       campoCategoria.value = articolo.categoria || '';
       campoEstratto.value = articolo.estratto || '';
       campoContenuto.value = articolo.contenuto || '';
+      campoVisibilita.value = articolo.visibilita || 'pubblico';
       campoPubblicato.checked = !!articolo.pubblicato;
+      // Un Autore modifica solo le proprie bozze non ancora pubblicate
+      // (v. puoModificare) e non può pubblicarle lui stesso.
+      rigaPubblicato.hidden = !puoApprovare();
+      notaApprovazione.hidden = puoApprovare();
       overlayArticolo.hidden = false;
       campoTitolo.focus();
     }
@@ -389,7 +474,8 @@
         categoria: campoCategoria.value.trim() || 'Generale',
         estratto: campoEstratto.value.trim(),
         contenuto: campoContenuto.value.trim(),
-        pubblicato: campoPubblicato.checked,
+        visibilita: campoVisibilita.value,
+        pubblicato: puoApprovare() ? campoPubblicato.checked : false,
       };
       btn.disabled = true;
       collezioneArticoli.doc(idCorrente).update(dati).then(function () {

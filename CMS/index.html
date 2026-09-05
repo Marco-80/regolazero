@@ -34,7 +34,13 @@
     .barra-alto a.home { text-decoration: none; color: #cfcfcf; font-size: 0.85rem; opacity: 0.8; }
     .barra-alto a.home:hover { opacity: 1; }
     .barra-alto .titolo-blog { font-weight: 700; letter-spacing: 0.02em; }
-    .barra-alto .azioni { display: flex; gap: 0.5rem; }
+    .barra-alto .azioni { display: flex; gap: 0.5rem; align-items: center; }
+    .etichetta-ruolo {
+      font-size: 0.7rem;
+      color: #9c9c9c;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
     /* .pure-button di Pure CSS dà già display/padding/border-radius/
        cursor di base — qui sopra si sovrascrivono solo i colori per il
        tema scuro. */
@@ -123,6 +129,37 @@
     .scheda-articolo h3 { margin: 0.3rem 0 0.4rem; font-size: 1.1rem; }
     .scheda-articolo p { margin: 0; color: #b8b8b8; font-size: 0.9rem; }
     .scheda-articolo .data { margin-top: 0.6rem; font-size: 0.75rem; color: #777; }
+    .etichetta-iscritti {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.05rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(147, 51, 234, 0.18);
+      color: #c9a3f5;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+    }
+
+    .riga-utente {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(207, 207, 207, 0.15);
+    }
+    .riga-utente:last-child { border-bottom: none; }
+    .riga-utente .email { font-size: 0.85rem; word-break: break-all; }
+    .riga-utente select {
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(207, 207, 207, 0.35);
+      background: #e9e7e2;
+      color: #1a1a1a;
+      font-size: 0.8rem;
+    }
 
     .vuoto { color: #8a8a8a; font-size: 0.9rem; }
 
@@ -184,6 +221,8 @@
     <a class="home" href="/">← RegolaZero</a>
     <span class="titolo-blog">Blog</span>
     <div class="azioni">
+      <span class="etichetta-ruolo" id="etichetta-ruolo" hidden></span>
+      <button type="button" class="pure-button pulsante-pillola" id="btn-utenti" hidden>Gestione utenti</button>
       <button type="button" class="pure-button pulsante-pillola" id="btn-accedi">Accedi</button>
       <button type="button" class="pure-button pulsante-pillola" id="btn-esci" hidden>Esci</button>
       <button type="button" class="pure-button pulsante-pillola primario" id="btn-nuovo" hidden>+ Nuovo articolo</button>
@@ -232,13 +271,30 @@
       <textarea id="campo-estratto" style="min-height:4rem;"></textarea>
       <label for="campo-contenuto">Contenuto (un paragrafo per riga vuota)</label>
       <textarea id="campo-contenuto"></textarea>
-      <div class="riga-checkbox">
+      <label for="campo-visibilita">Chi può leggerlo (una volta pubblicato)</label>
+      <select id="campo-visibilita">
+        <option value="pubblico">Pubblico (chiunque)</option>
+        <option value="iscritti">Solo iscritti (serve un account)</option>
+      </select>
+      <div class="riga-checkbox" id="riga-pubblicato">
         <input type="checkbox" id="campo-pubblicato" />
-        <label for="campo-pubblicato">Pubblicato (visibile a tutti)</label>
+        <label for="campo-pubblicato">Pubblicato (visibile secondo la visibilità scelta sopra)</label>
       </div>
+      <p class="vuoto" id="nota-approvazione" style="margin-top:0.6rem;" hidden>Verrà salvato come bozza: un Redattore dovrà approvarlo prima che sia visibile.</p>
       <div class="riga-pulsanti">
         <button type="button" class="pure-button pulsante-pillola" id="btn-articolo-annulla">Annulla</button>
         <button type="button" class="pure-button pulsante-pillola primario" id="btn-articolo-salva">Salva</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay-modale" id="overlay-utenti" hidden>
+    <div class="modale" role="dialog" aria-modal="true">
+      <h2>Gestione utenti</h2>
+      <p class="vuoto">Chi si registra parte come "Ospite". Assegna qui chi può scrivere (Autore) o approvare e pubblicare (Redattore).</p>
+      <div id="elenco-utenti"><p class="vuoto">Caricamento...</p></div>
+      <div class="riga-pulsanti">
+        <button type="button" class="pure-button pulsante-pillola" id="btn-utenti-chiudi">Chiudi</button>
       </div>
     </div>
   </div>
@@ -257,8 +313,31 @@
     });
     var db = firebase.firestore();
     var collezioneArticoli = db.collection('blog_posts');
+    var collezioneUtenti = db.collection('users');
     var autenticato = false;
+    var ruoloUtente = null; // null finché sconosciuto/non loggato; altrimenti 'ospite'|'autore'|'redattore'|'admin'
     var articoli = [];
+
+    // Chi si registra parte come "ospite": crea il proprio documento se
+    // manca (le regole impediscono di auto-assegnarsi un ruolo diverso
+    // da "ospite" — solo un admin può promuovere qualcuno dal pannello
+    // "Gestione utenti").
+    function assicuraUtenteERuolo(utente) {
+      var rif = collezioneUtenti.doc(utente.uid);
+      return rif.get().then(function (doc) {
+        if (doc.exists) return doc.data().ruolo || 'ospite';
+        return rif.set({
+          email: utente.email || '',
+          nome: utente.displayName || '',
+          ruolo: 'ospite',
+          creato: firebase.firestore.FieldValue.serverTimestamp(),
+        }).then(function () { return 'ospite'; });
+      });
+    }
+
+    function puoScrivere() { return ruoloUtente === 'autore' || ruoloUtente === 'redattore' || ruoloUtente === 'admin'; }
+    function puoApprovare() { return ruoloUtente === 'redattore' || ruoloUtente === 'admin'; }
+    function eAdmin() { return ruoloUtente === 'admin'; }
 
     function formattaData(timestamp) {
       if (!timestamp || !timestamp.toDate) return '';
@@ -308,6 +387,12 @@
         scheda.href = './articolo.html?id=' + encodeURIComponent(a.id);
         scheda.innerHTML = '<span class="categoria"></span><h3></h3><p></p><div class="data"></div>';
         scheda.querySelector('.categoria').textContent = a.categoria || 'Generale';
+        if (a.visibilita === 'iscritti') {
+          var tag = document.createElement('span');
+          tag.className = 'etichetta-iscritti';
+          tag.textContent = 'Iscritti';
+          scheda.querySelector('.categoria').appendChild(tag);
+        }
         scheda.querySelector('h3').textContent = a.titolo;
         scheda.querySelector('p').textContent = a.estratto;
         scheda.querySelector('.data').textContent = formattaData(a.creato) + (a.pubblicato ? '' : ' — bozza');
@@ -315,19 +400,48 @@
       });
     }
 
+    function unisciPerId(liste) {
+      var mappa = {};
+      liste.forEach(function (lista) { lista.forEach(function (a) { mappa[a.id] = a; }); });
+      return Object.keys(mappa).map(function (id) { return mappa[id]; });
+    }
+
+    function docsAOggetti(snapshot) {
+      return snapshot.docs.map(function (doc) {
+        var dati = doc.data();
+        dati.id = doc.id;
+        return dati;
+      });
+    }
+
     function caricaArticoli() {
-      // Niente .orderBy() qui apposta: combinato con .where('pubblicato', ...)
-      // richiederebbe un indice composito da creare a mano nella console
-      // Firestore (bug/comportamento incontrato il 05/09). L'ordinamento
-      // per data si fa lato client dopo il fetch, su un elenco comunque
-      // piccolo (è un mini blog).
-      var query = autenticato ? collezioneArticoli : collezioneArticoli.where('pubblicato', '==', true);
-      query.get().then(function (snapshot) {
-        articoli = snapshot.docs.map(function (doc) {
-          var dati = doc.data();
-          dati.id = doc.id;
-          return dati;
-        });
+      // Niente .orderBy() qui apposta: combinato con .where(...) su un
+      // altro campo richiederebbe un indice composito da creare a mano
+      // nella console Firestore (bug/comportamento incontrato il 05/09).
+      // L'ordinamento per data si fa lato client dopo il fetch.
+      // Le query devono restare strutturalmente conformi alle regole di
+      // sicurezza per ciascun ruolo (Firestore rifiuta l'intera query se
+      // *potrebbe* restituire un documento non leggibile, anche se in
+      // pratica non lo fa).
+      var promessa;
+      if (puoApprovare()) {
+        // redattore/admin: leggono tutto (bozze incluse, di chiunque)
+        promessa = collezioneArticoli.get().then(docsAOggetti);
+      } else if (autenticato) {
+        // ospite/autore loggato: tutti i pubblicati (pubblico o iscritti,
+        // le regole lo permettono a chiunque sia autenticato) + le
+        // proprie bozze
+        var uid = firebase.auth().currentUser.uid;
+        promessa = Promise.all([
+          collezioneArticoli.where('pubblicato', '==', true).get().then(docsAOggetti),
+          collezioneArticoli.where('autoreUid', '==', uid).get().then(docsAOggetti),
+        ]).then(unisciPerId);
+      } else {
+        // visitatore anonimo: solo i pubblicati e pubblici
+        promessa = collezioneArticoli.where('pubblicato', '==', true).where('visibilita', '==', 'pubblico').get().then(docsAOggetti);
+      }
+      promessa.then(function (lista) {
+        articoli = lista;
         articoli.sort(function (a, b) {
           var ta = a.creato && a.creato.toMillis ? a.creato.toMillis() : 0;
           var tb = b.creato && b.creato.toMillis ? b.creato.toMillis() : 0;
@@ -347,13 +461,33 @@
     var btnAccedi = document.getElementById('btn-accedi');
     var btnEsci = document.getElementById('btn-esci');
     var btnNuovo = document.getElementById('btn-nuovo');
+    var btnUtenti = document.getElementById('btn-utenti');
+    var etichettaRuolo = document.getElementById('etichetta-ruolo');
+
+    var NOMI_RUOLO = { ospite: 'Ospite', autore: 'Autore', redattore: 'Redattore', admin: 'Admin' };
+
+    function aggiornaUI() {
+      btnAccedi.hidden = autenticato;
+      btnEsci.hidden = !autenticato;
+      btnNuovo.hidden = !puoScrivere();
+      btnUtenti.hidden = !eAdmin();
+      etichettaRuolo.hidden = !autenticato;
+      etichettaRuolo.textContent = ruoloUtente ? NOMI_RUOLO[ruoloUtente] : '';
+    }
 
     firebase.auth().onAuthStateChanged(function (utente) {
       autenticato = !!utente;
-      btnAccedi.hidden = autenticato;
-      btnEsci.hidden = !autenticato;
-      btnNuovo.hidden = !autenticato;
-      caricaArticoli();
+      if (!utente) {
+        ruoloUtente = null;
+        aggiornaUI();
+        caricaArticoli();
+        return;
+      }
+      assicuraUtenteERuolo(utente).then(function (ruolo) {
+        ruoloUtente = ruolo;
+        aggiornaUI();
+        caricaArticoli();
+      });
     });
 
     btnAccedi.addEventListener('click', function () {
@@ -393,7 +527,10 @@
     var campoCategoria = document.getElementById('campo-categoria');
     var campoEstratto = document.getElementById('campo-estratto');
     var campoContenuto = document.getElementById('campo-contenuto');
+    var campoVisibilita = document.getElementById('campo-visibilita');
     var campoPubblicato = document.getElementById('campo-pubblicato');
+    var rigaPubblicato = document.getElementById('riga-pubblicato');
+    var notaApprovazione = document.getElementById('nota-approvazione');
 
     btnNuovo.addEventListener('click', function () {
       document.getElementById('articolo-modale-titolo').textContent = 'Nuovo articolo';
@@ -401,7 +538,12 @@
       campoCategoria.value = '';
       campoEstratto.value = '';
       campoContenuto.value = '';
+      campoVisibilita.value = 'pubblico';
       campoPubblicato.checked = false;
+      // Un Autore (non Redattore/admin) non può auto-pubblicare: il
+      // checkbox sparisce, resta solo la nota che spiega perché.
+      rigaPubblicato.hidden = !puoApprovare();
+      notaApprovazione.hidden = puoApprovare();
       overlayArticolo.hidden = false;
       campoTitolo.focus();
     });
@@ -417,7 +559,10 @@
         categoria: campoCategoria.value.trim() || 'Generale',
         estratto: campoEstratto.value.trim(),
         contenuto: campoContenuto.value.trim(),
-        pubblicato: campoPubblicato.checked,
+        visibilita: campoVisibilita.value,
+        pubblicato: puoApprovare() ? campoPubblicato.checked : false,
+        autoreUid: firebase.auth().currentUser.uid,
+        autoreEmail: firebase.auth().currentUser.email || '',
         creato: firebase.firestore.FieldValue.serverTimestamp(),
       };
       btn.disabled = true;
@@ -431,6 +576,50 @@
         btn.disabled = false;
       });
     });
+
+    // --- Gestione utenti (solo admin) ---
+    var overlayUtenti = document.getElementById('overlay-utenti');
+    btnUtenti.addEventListener('click', function () {
+      overlayUtenti.hidden = false;
+      var elenco = document.getElementById('elenco-utenti');
+      elenco.innerHTML = '<p class="vuoto">Caricamento...</p>';
+      collezioneUtenti.get().then(function (snapshot) {
+        if (snapshot.empty) {
+          elenco.innerHTML = '<p class="vuoto">Nessun utente registrato ancora.</p>';
+          return;
+        }
+        elenco.innerHTML = '';
+        snapshot.docs.forEach(function (doc) {
+          var dati = doc.data();
+          var riga = document.createElement('div');
+          riga.className = 'riga-utente';
+          riga.innerHTML = '<span class="email"></span>';
+          riga.querySelector('.email').textContent = dati.email || doc.id;
+          var select = document.createElement('select');
+          ['ospite', 'autore', 'redattore', 'admin'].forEach(function (r) {
+            var opt = document.createElement('option');
+            opt.value = r;
+            opt.textContent = NOMI_RUOLO[r];
+            if (r === dati.ruolo) opt.selected = true;
+            select.appendChild(opt);
+          });
+          select.addEventListener('change', function () {
+            collezioneUtenti.doc(doc.id).update({ ruolo: select.value }).catch(function (errore) {
+              console.error('Errore nel cambiare ruolo:', errore);
+              alert('Non sono riuscito a cambiare il ruolo. Riprova.');
+              select.value = dati.ruolo;
+            });
+          });
+          riga.appendChild(select);
+          elenco.appendChild(riga);
+        });
+      }).catch(function (errore) {
+        console.error('Errore nel caricare gli utenti:', errore);
+        elenco.innerHTML = '<p class="vuoto">Errore nel caricamento.</p>';
+      });
+    });
+    document.getElementById('btn-utenti-chiudi').addEventListener('click', function () { overlayUtenti.hidden = true; });
+    overlayUtenti.addEventListener('click', function (e) { if (e.target === overlayUtenti) overlayUtenti.hidden = true; });
 
     caricaArticoli();
   </script>
